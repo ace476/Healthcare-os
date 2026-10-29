@@ -47,9 +47,10 @@ The sample data is fictional. New accounts are created in server memory for this
 ## Project structure
 
 - `server.js` — Express app, session authentication, and in-memory sample API
-- `public/index.html` — sign-in and dashboard markup
+- `public/index.html` — public landing page with top navigation and login button
+- `public/login.html` — separate sign-in, account creation, and dashboard experience
 - `public/app.js` — authentication flow and dashboard interactions
-- `public/styles.css` — responsive UI styling
+- `public/styles.css` — responsive landing page, login, and dashboard styling
 
 ## Tech stack
 
