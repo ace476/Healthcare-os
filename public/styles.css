@@ -35,3 +35,9 @@
 @media(max-width:1000px){.auth-screen{grid-template-columns:minmax(350px,1fr) minmax(380px,1fr)}.auth-topbar{padding:0 24px}.auth-topbar-links{gap:16px}.auth-art{padding-left:28px;padding-right:28px}.auth-feature-list{gap:12px}.care-photo{height:190px}.auth-form-wrap{padding:24px}}
 @media(max-width:760px){.auth-screen{display:flex;flex-direction:column;min-height:100vh}.auth-topbar{min-height:68px;display:flex;justify-content:space-between;padding:0 18px}.auth-topbar-links{display:none}.auth-topbar-actions{gap:8px}.auth-top-login,.auth-top-start{min-height:34px;padding:0 12px;font-size:10px}.auth-art{min-height:auto;padding:24px 22px 22px}.art-copy{margin:0 auto}.art-copy h1{font-size:34px;letter-spacing:-1.5px}.art-copy>p{font-size:12px}.auth-feature-list{margin-top:18px;gap:12px}.care-photo{height:200px;max-width:none;margin-top:18px}.auth-photo-caption{font-size:15px}.art-footer{margin-top:22px}.auth-main{min-height:auto;padding:28px 18px 20px}.auth-form-wrap{padding:24px 20px;width:100%;max-width:480px}.auth-bottom{padding:0 4px}.mobile-brand{display:none}}
 @media(max-width:420px){.auth-topbar-brand{font-size:17px;gap:7px}.auth-topbar-brand .brand-logo-image{width:29px;height:29px;flex-basis:29px}.auth-feature-list{grid-template-columns:1fr 1fr;gap:10px}.auth-feature-icon{width:30px;height:30px;flex-basis:30px}.auth-feature strong{font-size:9px}.auth-feature small{font-size:8px}.auth-photo-caption{font-size:14px}}
+
+
+/* Photo removed from login hero at user request */
+.care-photo,.auth-photo-caption{display:none!important}
+.auth-feature-list{margin-bottom:clamp(28px,5vh,58px)}
+@media(max-width:760px){.auth-feature-list{margin-bottom:24px}}
