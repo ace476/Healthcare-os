@@ -1,0 +1,150 @@
+# Family Healthcare OS
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Family Healthcare OS</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Healthcare ecosystem</p>
+          <h1>Family Healthcare OS</h1>
+        </div>
+        <div class="family-badge">
+          <span>Family code</span>
+          <strong id="familyCode">FAM-2048</strong>
+        </div>
+      </header>
+
+      <main class="dashboard">
+        <section class="card hero">
+          <div>
+            <p class="eyebrow">Unified care coordination</p>
+            <h2>One place for family health records and care planning.</h2>
+          </div>
+          <button class="primary-btn" type="button">Schedule appointment</button>
+        </section>
+
+        <section class="grid stats">
+          <article class="card stat-card">
+            <span class="label">Members</span>
+            <strong id="memberCount">0</strong>
+          </article>
+          <article class="card stat-card">
+            <span class="label">Appointments</span>
+            <strong id="appointmentCount">0</strong>
+          </article>
+          <article class="card stat-card">
+            <span class="label">Medications</span>
+            <strong id="medicationCount">0</strong>
+          </article>
+          <article class="card stat-card">
+            <span class="label">Doctors</span>
+            <strong id="doctorCount">0</strong>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <article class="card">
+            <div class="section-header">
+              <h3>Family members</h3>
+            </div>
+            <div id="familyMembers" class="list"></div>
+          </article>
+
+          <article class="card">
+            <div class="section-header">
+              <h3>Upcoming appointments</h3>
+            </div>
+            <div id="appointments" class="list"></div>
+          </article>
+
+          <article class="card">
+            <div class="section-header">
+              <h3>Medication schedule</h3>
+            </div>
+            <div id="medications" class="list"></div>
+          </article>
+
+          <article class="card">
+            <div class="section-header">
+              <h3>Care team</h3>
+            </div>
+            <div id="doctors" class="list"></div>
+          </article>
+        </section>
+
+        <section class="forms-grid">
+          <article class="card form-card">
+            <h3>Add family member</h3>
+            <form id="familyForm">
+              <label>
+                Name
+                <input name="name" required placeholder="Enter full name" />
+              </label>
+              <label>
+                Role
+                <input name="role" placeholder="Primary member / Dependent / Caregiver" />
+              </label>
+              <label>
+                Age
+                <input name="age" type="number" min="0" placeholder="Age" />
+              </label>
+              <label>
+                Member ID
+                <input name="memberId" placeholder="MEM-xxxx" />
+              </label>
+              <label>
+                Conditions
+                <input name="conditions" placeholder="Asthma, Diabetes" />
+              </label>
+              <label>
+                Medications
+                <input name="medications" placeholder="Insulin, Vitamin D" />
+              </label>
+              <label>
+                Doctor
+                <input name="doctor" placeholder="Assigned physician" />
+              </label>
+              <button class="primary-btn" type="submit">Save member</button>
+            </form>
+          </article>
+
+          <article class="card form-card">
+            <h3>Schedule appointment</h3>
+            <form id="appointmentForm">
+              <label>
+                Patient
+                <input name="patient" required placeholder="Asha Patel" />
+              </label>
+              <label>
+                Doctor
+                <input name="doctor" required placeholder="Dr. Mehta" />
+              </label>
+              <label>
+                Date
+                <input name="date" type="date" required />
+              </label>
+              <label>
+                Time
+                <input name="time" required placeholder="10:30 AM" />
+              </label>
+              <label>
+                Type
+                <input name="type" placeholder="Follow-up / Consultation" />
+              </label>
+              <button class="primary-btn" type="submit">Add appointment</button>
+            </form>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
