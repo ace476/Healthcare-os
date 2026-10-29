@@ -203,6 +203,8 @@ function openForm(formId) {
 }
 $('newAppointmentButton').addEventListener('click', () => openForm('appointmentForm'));
 $('addMemberButton').addEventListener('click', () => openForm('familyForm'));
+$('quickScheduleAppointment').addEventListener('click', () => openForm('appointmentForm'));
+$('quickAddMember').addEventListener('click', () => openForm('familyForm'));
 $('exploreFamilyButton').addEventListener('click', () => navigateSection('family'));
 document.querySelectorAll('[data-close-form]').forEach((button) => button.addEventListener('click', () => {
   $('familyFormPanel').hidden = true;

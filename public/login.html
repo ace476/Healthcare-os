@@ -93,11 +93,11 @@
       </header>
       <div class="dashboard-content">
         <div class="welcome-row">
-          <div><span class="eyebrow" id="todayLabel">YOUR FAMILY AT A GLANCE</span><h1 id="welcomeTitle">Good morning, Asha <span>✦</span></h1><p>Here's what's happening with your family's care.</p></div>
+          <div><span class="eyebrow" id="todayLabel">YOUR FAMILY AT A GLANCE</span><h1 id="welcomeTitle">Good morning, Asha <span>✦</span></h1><p>Here's your care overview, with the details and people that matter most.</p></div>
           <button class="primary-action" id="newAppointmentButton"><span>＋</span> Schedule appointment</button>
         </div>
         <section class="hero-banner">
-          <div class="hero-text"><span class="banner-label"><span>✳</span> YOUR FAMILY, CONNECTED</span><h2>All the care that matters.<br /><em>In one place.</em></h2><p>Appointments, medications and the people who care for you — thoughtfully organised.</p><button id="exploreFamilyButton" class="banner-link">Explore your family <span>→</span></button></div>
+          <div class="hero-text"><span class="banner-label"><span>✳</span> YOUR CARE, CONNECTED</span><h2>All the care that matters.<br /><em>In one place.</em></h2><p>Appointments, medications and the people who care for you — thoughtfully organised.</p><button id="exploreFamilyButton" class="banner-link">Explore your family <span>→</span></button></div>
           <div class="banner-art" aria-hidden="true"><div class="banner-circle circle-back"></div><div class="banner-circle circle-front"></div><div class="banner-person person-one">A</div><div class="banner-person person-two">R</div><div class="banner-person person-three">M</div><div class="banner-plus">+</div><div class="banner-heart">♥</div><div class="banner-spark">✦</div></div>
         </section>
         <section class="stats-grid" aria-label="Family care summary">
@@ -105,6 +105,14 @@
           <article class="stat-tile"><div class="stat-icon appointments-icon">▦</div><span class="stat-label">Appointments</span><strong id="appointmentCount">0</strong><small>Upcoming visits</small></article>
           <article class="stat-tile"><div class="stat-icon medication-icon">✚</div><span class="stat-label">Medications</span><strong id="medicationCount">0</strong><small>In your family schedule</small></article>
           <article class="stat-tile"><div class="stat-icon doctors-icon">♡</div><span class="stat-label">Care team</span><strong id="doctorCount">0</strong><small>Healthcare professionals</small></article>
+        </section>
+        <section class="dashboard-quick-actions" aria-label="Quick actions">
+          <div class="quick-actions-heading"><div><span class="panel-kicker">A GOOD PLACE TO START</span><h3>What would you like to do?</h3></div><span class="quick-actions-note">Your care, a little more organised</span></div>
+          <div class="quick-actions-grid">
+            <button class="quick-action-card quick-action-primary" type="button" id="quickScheduleAppointment"><span class="quick-action-icon">＋</span><span><strong>Schedule a visit</strong><small>Plan an appointment</small></span><span class="quick-action-arrow">→</span></button>
+            <button class="quick-action-card" type="button" id="quickAddMember"><span class="quick-action-icon quick-icon-family">♧</span><span><strong>Add a person</strong><small>Grow your care circle</small></span><span class="quick-action-arrow">→</span></button>
+            <button class="quick-action-card" type="button" data-section-link="medications"><span class="quick-action-icon quick-icon-medication">✚</span><span><strong>Review medications</strong><small>See listed routines</small></span><span class="quick-action-arrow">→</span></button>
+          </div>
         </section>
         <section class="dashboard-grid">
           <article class="panel appointments-panel" id="appointmentsPanel"><div class="panel-heading"><div><span class="panel-kicker">DON'T MISS A MOMENT</span><h3>Upcoming appointments</h3></div><button class="subtle-link" data-section-link="appointments">View all <span>→</span></button></div><div id="appointments" class="record-list"></div></article>
@@ -118,7 +126,7 @@
           <article class="panel form-panel" id="appointmentFormPanel" hidden><div class="panel-heading"><div><span class="panel-kicker">PLAN AHEAD</span><h3>Schedule an appointment</h3></div><button class="close-panel" data-close-form aria-label="Close form">×</button></div><form id="appointmentForm" class="data-form">
             <label>Patient<input name="patient" required placeholder="Family member name" /></label><label>Doctor<input name="doctor" required placeholder="Doctor's name" /></label><label>Date<input name="date" type="date" required /></label><label>Time<input name="time" required placeholder="e.g. 10:30 AM" /></label><label>Visit type<input name="type" placeholder="Consultation / Follow-up" /></label><button class="primary-action" type="submit">Save appointment</button></form></article>
         </section>
-        <footer class="dashboard-footer"><span>✳ Healthcare OS</span><span>Organised care, a little more peace of mind.</span><span>Demo data · Not for clinical use</span></footer>
+        <footer class="dashboard-footer"><span>✳ Healthcare OS</span><span>A clearer view of everyday care.</span><span>Demo data · Not for clinical use</span></footer>
       </div>
     </main>
   </div>
