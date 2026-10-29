@@ -265,6 +265,7 @@ document.querySelectorAll('[data-section-link]').forEach((button) => button.addE
 $('mobileMenu').addEventListener('click', () => $('sidebar').classList.toggle('sidebar-open'));
 
 (async function init() {
+  if (new URLSearchParams(window.location.search).get('mode') === 'signup') setAuthMode('signup');
   try {
     const data = await api('/api/auth/me');
     enterWorkspace(data.user);
