@@ -1,150 +1,69 @@
-# Family Healthcare OS
-
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Family Healthcare OS</title>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <div class="page-shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Healthcare ecosystem</p>
-          <h1>Family Healthcare OS</h1>
-        </div>
-        <div class="family-badge">
-          <span>Family code</span>
-          <strong id="familyCode">FAM-2048</strong>
-        </div>
-      </header>
-
-      <main class="dashboard">
-        <section class="card hero">
-          <div>
-            <p class="eyebrow">Unified care coordination</p>
-            <h2>One place for family health records and care planning.</h2>
-          </div>
-          <button class="primary-btn" type="button">Schedule appointment</button>
-        </section>
-
-        <section class="grid stats">
-          <article class="card stat-card">
-            <span class="label">Members</span>
-            <strong id="memberCount">0</strong>
-          </article>
-          <article class="card stat-card">
-            <span class="label">Appointments</span>
-            <strong id="appointmentCount">0</strong>
-          </article>
-          <article class="card stat-card">
-            <span class="label">Medications</span>
-            <strong id="medicationCount">0</strong>
-          </article>
-          <article class="card stat-card">
-            <span class="label">Doctors</span>
-            <strong id="doctorCount">0</strong>
-          </article>
-        </section>
-
-        <section class="content-grid">
-          <article class="card">
-            <div class="section-header">
-              <h3>Family members</h3>
-            </div>
-            <div id="familyMembers" class="list"></div>
-          </article>
-
-          <article class="card">
-            <div class="section-header">
-              <h3>Upcoming appointments</h3>
-            </div>
-            <div id="appointments" class="list"></div>
-          </article>
-
-          <article class="card">
-            <div class="section-header">
-              <h3>Medication schedule</h3>
-            </div>
-            <div id="medications" class="list"></div>
-          </article>
-
-          <article class="card">
-            <div class="section-header">
-              <h3>Care team</h3>
-            </div>
-            <div id="doctors" class="list"></div>
-          </article>
-        </section>
-
-        <section class="forms-grid">
-          <article class="card form-card">
-            <h3>Add family member</h3>
-            <form id="familyForm">
-              <label>
-                Name
-                <input name="name" required placeholder="Enter full name" />
-              </label>
-              <label>
-                Role
-                <input name="role" placeholder="Primary member / Dependent / Caregiver" />
-              </label>
-              <label>
-                Age
-                <input name="age" type="number" min="0" placeholder="Age" />
-              </label>
-              <label>
-                Member ID
-                <input name="memberId" placeholder="MEM-xxxx" />
-              </label>
-              <label>
-                Conditions
-                <input name="conditions" placeholder="Asthma, Diabetes" />
-              </label>
-              <label>
-                Medications
-                <input name="medications" placeholder="Insulin, Vitamin D" />
-              </label>
-              <label>
-                Doctor
-                <input name="doctor" placeholder="Assigned physician" />
-              </label>
-              <button class="primary-btn" type="submit">Save member</button>
-            </form>
-          </article>
-
-          <article class="card form-card">
-            <h3>Schedule appointment</h3>
-            <form id="appointmentForm">
-              <label>
-                Patient
-                <input name="patient" required placeholder="Asha Patel" />
-              </label>
-              <label>
-                Doctor
-                <input name="doctor" required placeholder="Dr. Mehta" />
-              </label>
-              <label>
-                Date
-                <input name="date" type="date" required />
-              </label>
-              <label>
-                Time
-                <input name="time" required placeholder="10:30 AM" />
-              </label>
-              <label>
-                Type
-                <input name="type" placeholder="Follow-up / Consultation" />
-              </label>
-              <button class="primary-btn" type="submit">Add appointment</button>
-            </form>
-          </article>
-        </section>
-      </main>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0c615b" />
+  <meta name="description" content="Healthcare OS brings family appointments, medications and care coordination together in one thoughtful space." />
+  <title>Healthcare OS · Family care, connected</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="landing-page">
+  <header class="landing-nav">
+    <a class="brand landing-brand" href="/" aria-label="Healthcare OS home"><span class="brand-mark" aria-hidden="true">✳</span><span>healthcare<span>OS</span></span></a>
+    <nav class="landing-links" aria-label="Main navigation">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#about">About</a>
+    </nav>
+    <div class="landing-nav-actions">
+      <a class="nav-login" href="/login.html">Log in</a>
+      <a class="nav-signup" href="/login.html?mode=signup">Get started <span aria-hidden="true">→</span></a>
     </div>
+  </header>
 
-    <script src="/app.js"></script>
-  </body>
+  <main>
+    <section class="landing-hero">
+      <div class="landing-hero-copy">
+        <span class="eyebrow"><span class="hero-status-dot"></span> FAMILY CARE, IN SYNC</span>
+        <h1>Better care starts with being <em>connected.</em></h1>
+        <p>One calm, organised place for the people you love. Keep family appointments, medication routines and care-team details together — without the overwhelm.</p>
+        <div class="landing-hero-actions">
+          <a class="landing-primary" href="/login.html?mode=signup">Create your free account <span aria-hidden="true">→</span></a>
+          <a class="landing-secondary" href="/login.html">I already have an account</a>
+        </div>
+        <div class="landing-trust"><span class="trust-check">✓</span> Built for everyday care coordination <span class="trust-divider">·</span> Demo experience</div>
+      </div>
+      <div class="landing-hero-art" aria-label="Illustration of a connected family healthcare dashboard">
+        <div class="landing-orbit orbit-a"></div><div class="landing-orbit orbit-b"></div>
+        <div class="landing-glow"></div>
+        <div class="landing-people"><div class="landing-person lp-one">A</div><div class="landing-person lp-two">R</div><div class="landing-person lp-three">M</div><span class="landing-plus">+</span><span class="landing-heart">♥</span></div>
+        <div class="preview-card preview-appointment"><span class="preview-icon preview-blue">▦</span><span><small>NEXT APPOINTMENT</small><strong>Family check-in</strong><small class="preview-muted">Monday · 10:30 AM</small></span><span class="preview-check">✓</span></div>
+        <div class="preview-card preview-medication"><span class="preview-icon preview-peach">✚</span><span><small>DAILY ROUTINE</small><strong>Medication schedule</strong><small class="preview-muted">Everything in one view</small></span></div>
+        <div class="preview-tag"><span>✳</span> Care, together</div>
+      </div>
+      <div class="hero-bottom-note"><span>✳</span> MADE FOR THE PEOPLE WHO MATTER MOST</div>
+    </section>
+
+    <section class="landing-features" id="features">
+      <div class="landing-section-intro"><span class="eyebrow">A LITTLE MORE PEACE OF MIND</span><h2>All the care that matters.<br /><em>In one place.</em></h2><p>Less searching for details. More time for the people behind them.</p></div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-icon feature-green">♧</span><h3>Your family, together</h3><p>Keep the important details for each family member in one easy-to-find place.</p><a href="/login.html">Explore family profiles <span>→</span></a></article>
+        <article class="feature-card"><span class="feature-icon feature-blue">▦</span><h3>Appointments in view</h3><p>See upcoming visits and keep track of who, when and where at a glance.</p><a href="/login.html">Organise appointments <span>→</span></a></article>
+        <article class="feature-card"><span class="feature-icon feature-peach">✚</span><h3>Everyday routines</h3><p>Make medication schedules and care-team information easier to find.</p><a href="/login.html">See care coordination <span>→</span></a></article>
+      </div>
+    </section>
+
+    <section class="landing-how" id="how-it-works">
+      <div class="how-visual"><div class="how-circle"></div><div class="how-note"><span class="how-note-icon">✳</span><div><strong>Your family's care space</strong><small>One thoughtful place to start.</small></div></div><div class="how-mini-card"><span class="how-mini-check">✓</span><div><strong>Care, organised</strong><small>Members · Visits · Routines</small></div></div></div>
+      <div class="how-copy"><span class="eyebrow">SIMPLE BY DESIGN</span><h2>More clarity for the everyday moments.</h2><p>Healthcare OS is designed to make family care coordination feel more manageable, whether you're keeping track of a check-up or helping a loved one stay organised.</p><ol><li><span>01</span><div><strong>Create your space</strong><p>Start with an account for your household.</p></div></li><li><span>02</span><div><strong>Bring the details together</strong><p>Add family members, appointments and care routines.</p></div></li><li><span>03</span><div><strong>Find what you need, faster</strong><p>Use one dashboard to view your care overview.</p></div></li></ol><a class="landing-primary" href="/login.html?mode=signup">Get started <span>→</span></a></div>
+    </section>
+
+    <section class="landing-cta" id="about"><div><span class="eyebrow light-eyebrow">YOUR FAMILY. YOUR CARE SPACE.</span><h2>A calmer way to care starts here.</h2><p>Bring the moving pieces of family care into one organised place.</p></div><a class="landing-cta-button" href="/login.html?mode=signup">Create your account <span>→</span></a></section>
+  </main>
+  <footer class="landing-footer"><a class="brand landing-brand" href="/"><span class="brand-mark" aria-hidden="true">✳</span><span>healthcare<span>OS</span></span></a><span>Organised care, a little more peace of mind.</span><span>Demo prototype · Not for clinical use</span></footer>
+</body>
 </html>
