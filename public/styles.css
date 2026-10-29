@@ -9,3 +9,7 @@
 /* Login brand links */
 .auth-brand-link{text-decoration:none;cursor:pointer}
 .auth-brand-link:focus-visible{outline:2px solid currentColor;outline-offset:5px;border-radius:5px}
+
+
+/* Unified Healthcare OS icon used in the tab and all brand headers */
+.brand-logo-image{display:block;object-fit:contain;padding:0;border-radius:11px;background:transparent;width:34px;height:34px;flex:0 0 34px}.landing-brand .brand-logo-image{width:32px;height:32px;flex-basis:32px}.brand-light .brand-logo-image{box-shadow:0 0 0 1px #ffffff12}
