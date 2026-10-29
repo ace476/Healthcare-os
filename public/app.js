@@ -136,21 +136,15 @@ $('signUpForm').addEventListener('submit', async (event) => {
     button.querySelector('span').textContent = 'Create my account';
   }
 });
-$('demoButton').addEventListener('click', async () => {
+$('demoButton').addEventListener('click', () => {
   clearNotice();
-  const button = $('demoButton');
-  button.disabled = true;
-  try {
-    const data = await api('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email: 'admin@demo.com', password: 'admin123' })
-    });
-    enterWorkspace(data.user);
-  } catch (error) {
-    showNotice(error.message);
-  } finally {
-    button.disabled = false;
-  }
+  // The public demo should work without credentials or an auth service.
+  // The dashboard reads its sample records from the existing demo API routes.
+  enterWorkspace({
+    name: 'Asha Patel',
+    email: 'admin@demo.com',
+    demo: true
+  });
 });
 $('forgotButton').addEventListener('click', () => {
   showNotice('Password reset email is not configured in this prototype. Please contact the app administrator.', 'success');
