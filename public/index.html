@@ -1,150 +1,126 @@
-# Family Healthcare OS
-
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Family Healthcare OS</title>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <div class="page-shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Healthcare ecosystem</p>
-          <h1>Family Healthcare OS</h1>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0c615b" />
+  <meta name="description" content="Family Healthcare OS — a calmer way to coordinate family care." />
+  <title>Healthcare OS · Your family's care, connected</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="auth-screen" id="authScreen">
+    <div class="auth-art">
+      <div class="brand brand-light"><span class="brand-mark" aria-hidden="true">✳</span><span>healthcare<span class="brand-lightness">OS</span></span></div>
+      <div class="art-copy">
+        <span class="eyebrow light-eyebrow">FAMILY CARE, IN SYNC</span>
+        <h1>Better care starts with being <em>connected.</em></h1>
+        <p>Keep the little details that matter in one thoughtful place — from appointments to everyday medication routines.</p>
+        <div class="care-illustration" aria-hidden="true">
+          <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+          <div class="heart-card"><span class="heart-icon">♥</span><div><strong>Care, together</strong><small>Every member. One view.</small></div><span class="heart-check">✓</span></div>
+          <div class="float-card float-calendar"><span class="float-icon mint">▦</span><div><small>NEXT APPOINTMENT</small><strong>Monday · 10:30 AM</strong></div></div>
+          <div class="float-card float-med"><span class="float-icon peach">✚</span><div><small>DAILY ROUTINE</small><strong>Medication check-in</strong></div></div>
+          <div class="bubble bubble-one">+</div><div class="bubble bubble-two">✦</div>
         </div>
-        <div class="family-badge">
-          <span>Family code</span>
-          <strong id="familyCode">FAM-2048</strong>
-        </div>
-      </header>
-
-      <main class="dashboard">
-        <section class="card hero">
-          <div>
-            <p class="eyebrow">Unified care coordination</p>
-            <h2>One place for family health records and care planning.</h2>
-          </div>
-          <button class="primary-btn" type="button">Schedule appointment</button>
-        </section>
-
-        <section class="grid stats">
-          <article class="card stat-card">
-            <span class="label">Members</span>
-            <strong id="memberCount">0</strong>
-          </article>
-          <article class="card stat-card">
-            <span class="label">Appointments</span>
-            <strong id="appointmentCount">0</strong>
-          </article>
-          <article class="card stat-card">
-            <span class="label">Medications</span>
-            <strong id="medicationCount">0</strong>
-          </article>
-          <article class="card stat-card">
-            <span class="label">Doctors</span>
-            <strong id="doctorCount">0</strong>
-          </article>
-        </section>
-
-        <section class="content-grid">
-          <article class="card">
-            <div class="section-header">
-              <h3>Family members</h3>
-            </div>
-            <div id="familyMembers" class="list"></div>
-          </article>
-
-          <article class="card">
-            <div class="section-header">
-              <h3>Upcoming appointments</h3>
-            </div>
-            <div id="appointments" class="list"></div>
-          </article>
-
-          <article class="card">
-            <div class="section-header">
-              <h3>Medication schedule</h3>
-            </div>
-            <div id="medications" class="list"></div>
-          </article>
-
-          <article class="card">
-            <div class="section-header">
-              <h3>Care team</h3>
-            </div>
-            <div id="doctors" class="list"></div>
-          </article>
-        </section>
-
-        <section class="forms-grid">
-          <article class="card form-card">
-            <h3>Add family member</h3>
-            <form id="familyForm">
-              <label>
-                Name
-                <input name="name" required placeholder="Enter full name" />
-              </label>
-              <label>
-                Role
-                <input name="role" placeholder="Primary member / Dependent / Caregiver" />
-              </label>
-              <label>
-                Age
-                <input name="age" type="number" min="0" placeholder="Age" />
-              </label>
-              <label>
-                Member ID
-                <input name="memberId" placeholder="MEM-xxxx" />
-              </label>
-              <label>
-                Conditions
-                <input name="conditions" placeholder="Asthma, Diabetes" />
-              </label>
-              <label>
-                Medications
-                <input name="medications" placeholder="Insulin, Vitamin D" />
-              </label>
-              <label>
-                Doctor
-                <input name="doctor" placeholder="Assigned physician" />
-              </label>
-              <button class="primary-btn" type="submit">Save member</button>
-            </form>
-          </article>
-
-          <article class="card form-card">
-            <h3>Schedule appointment</h3>
-            <form id="appointmentForm">
-              <label>
-                Patient
-                <input name="patient" required placeholder="Asha Patel" />
-              </label>
-              <label>
-                Doctor
-                <input name="doctor" required placeholder="Dr. Mehta" />
-              </label>
-              <label>
-                Date
-                <input name="date" type="date" required />
-              </label>
-              <label>
-                Time
-                <input name="time" required placeholder="10:30 AM" />
-              </label>
-              <label>
-                Type
-                <input name="type" placeholder="Follow-up / Consultation" />
-              </label>
-              <button class="primary-btn" type="submit">Add appointment</button>
-            </form>
-          </article>
-        </section>
-      </main>
+      </div>
+      <div class="art-footer"><span>Made for the people who matter most.</span><span>Private by design · Demo environment</span></div>
     </div>
+    <main class="auth-main">
+      <div class="mobile-brand brand"><span class="brand-mark" aria-hidden="true">✳</span><span>healthcare<span>OS</span></span></div>
+      <div class="auth-form-wrap">
+        <div class="auth-heading">
+          <span class="eyebrow">YOUR FAMILY'S CARE SPACE</span>
+          <h2 id="authTitle">Welcome back</h2>
+          <p id="authSubtitle">Sign in to pick up where your family left off.</p>
+        </div>
+        <div class="auth-tabs" role="tablist" aria-label="Account access">
+          <button class="auth-tab active" id="signInTab" type="button" role="tab" aria-selected="true">Sign in</button>
+          <button class="auth-tab" id="signUpTab" type="button" role="tab" aria-selected="false">Create account</button>
+        </div>
+        <div class="notice" id="authNotice" role="status" aria-live="polite" hidden></div>
+        <form id="signInForm" class="auth-fields">
+          <label for="loginEmail">Email address</label>
+          <input id="loginEmail" name="email" type="email" autocomplete="username" placeholder="you@example.com" required />
+          <div class="label-row"><label for="loginPassword">Password</label><button type="button" class="text-button" id="forgotButton">Forgot password?</button></div>
+          <div class="password-wrap"><input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required minlength="8" /><button class="password-toggle" type="button" data-target="loginPassword" aria-label="Show password">Show</button></div>
+          <div class="form-options"><label class="check-label"><input type="checkbox" id="rememberMe" /> <span>Keep me signed in</span></label><span class="secure-note"><span>●</span> Secure sign in</span></div>
+          <button class="submit-button" type="submit"><span>Sign in to your space</span><span aria-hidden="true">→</span></button>
+        </form>
+        <form id="signUpForm" class="auth-fields" hidden>
+          <label for="signupName">Full name</label>
+          <input id="signupName" name="name" autocomplete="name" placeholder="Your full name" required />
+          <label for="signupEmail">Email address</label>
+          <input id="signupEmail" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          <label for="signupPassword">Create password</label>
+          <div class="password-wrap"><input id="signupPassword" name="password" type="password" autocomplete="new-password" placeholder="At least 8 characters" required minlength="8" /><button class="password-toggle" type="button" data-target="signupPassword" aria-label="Show password">Show</button></div>
+          <label class="check-label terms-check"><input id="agreeTerms" type="checkbox" required /> <span>I agree to the terms and understand this is a demonstration app.</span></label>
+          <button class="submit-button" type="submit"><span>Create my account</span><span aria-hidden="true">→</span></button>
+        </form>
+        <div class="divider"><span>OR TRY THE DEMO</span></div>
+        <button type="button" class="demo-button" id="demoButton"><span class="demo-avatar">A</span><span class="demo-copy"><strong>Explore the family dashboard</strong><small>Use a sample account · No personal data</small></span><span class="demo-arrow">↗</span></button>
+        <p class="auth-legal">By continuing, you agree to our <a href="#terms" id="termsLink">Terms</a> and <a href="#privacy" id="privacyLink">Privacy Notice</a>.</p>
+      </div>
+      <div class="auth-bottom"><span>© 2026 Healthcare OS</span><span><i></i> A calmer way to care</span></div>
+    </main>
+  </div>
 
-    <script src="/app.js"></script>
-  </body>
+  <div class="app-shell" id="appShell" hidden>
+    <aside class="sidebar" id="sidebar">
+      <a class="brand sidebar-brand" href="#" aria-label="Healthcare OS home"><span class="brand-mark" aria-hidden="true">✳</span><span>healthcare<span>OS</span></span></a>
+      <div class="workspace-label">YOUR WORKSPACE</div>
+      <nav class="side-nav" aria-label="Main navigation">
+        <button class="nav-link selected" data-section="overview"><span class="nav-icon">⌂</span> Overview</button>
+        <button class="nav-link" data-section="family"><span class="nav-icon">♧</span> Family members</button>
+        <button class="nav-link" data-section="appointments"><span class="nav-icon">▦</span> Appointments <span class="nav-count" id="navAppointmentCount">3</span></button>
+        <button class="nav-link" data-section="medications"><span class="nav-icon">✚</span> Medications</button>
+        <button class="nav-link" data-section="doctors"><span class="nav-icon">♡</span> Care team</button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="help-card"><div class="help-spark">✦</div><strong>Care works better together.</strong><p>Keep your family's health information organised and easy to find.</p></div>
+      <button class="profile-button" id="profileButton"><span class="profile-avatar" id="profileInitials">A</span><span class="profile-meta"><strong id="profileName">Account</strong><small id="profileEmail">Signed in</small></span><span class="profile-dots">···</span></button>
+      <button class="signout-button" id="signOutButton">↪ <span>Sign out</span></button>
+    </aside>
+    <main class="dashboard-main">
+      <header class="dashboard-topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Open navigation">☰</button>
+        <div class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumbCurrent">Overview</strong></div>
+        <div class="topbar-right"><span class="privacy-pill"><span>●</span> Demo workspace</span><span class="top-avatar" id="topInitials">A</span></div>
+      </header>
+      <div class="dashboard-content">
+        <div class="welcome-row">
+          <div><span class="eyebrow" id="todayLabel">YOUR FAMILY AT A GLANCE</span><h1 id="welcomeTitle">Good morning, Asha <span>✦</span></h1><p>Here's what's happening with your family's care.</p></div>
+          <button class="primary-action" id="newAppointmentButton"><span>＋</span> Schedule appointment</button>
+        </div>
+        <section class="hero-banner">
+          <div class="hero-text"><span class="banner-label"><span>✳</span> YOUR FAMILY, CONNECTED</span><h2>All the care that matters.<br /><em>In one place.</em></h2><p>Appointments, medications and the people who care for you — thoughtfully organised.</p><button id="exploreFamilyButton" class="banner-link">Explore your family <span>→</span></button></div>
+          <div class="banner-art" aria-hidden="true"><div class="banner-circle circle-back"></div><div class="banner-circle circle-front"></div><div class="banner-person person-one">A</div><div class="banner-person person-two">R</div><div class="banner-person person-three">M</div><div class="banner-plus">+</div><div class="banner-heart">♥</div><div class="banner-spark">✦</div></div>
+        </section>
+        <section class="stats-grid" aria-label="Family care summary">
+          <article class="stat-tile"><div class="stat-icon members-icon">♧</div><span class="stat-label">Family members</span><strong id="memberCount">0</strong><small><span class="positive">●</span> In your care circle</small></article>
+          <article class="stat-tile"><div class="stat-icon appointments-icon">▦</div><span class="stat-label">Appointments</span><strong id="appointmentCount">0</strong><small>Upcoming visits</small></article>
+          <article class="stat-tile"><div class="stat-icon medication-icon">✚</div><span class="stat-label">Medications</span><strong id="medicationCount">0</strong><small>In your family schedule</small></article>
+          <article class="stat-tile"><div class="stat-icon doctors-icon">♡</div><span class="stat-label">Care team</span><strong id="doctorCount">0</strong><small>Healthcare professionals</small></article>
+        </section>
+        <section class="dashboard-grid">
+          <article class="panel appointments-panel" id="appointmentsPanel"><div class="panel-heading"><div><span class="panel-kicker">DON'T MISS A MOMENT</span><h3>Upcoming appointments</h3></div><button class="subtle-link" data-section-link="appointments">View all <span>→</span></button></div><div id="appointments" class="record-list"></div></article>
+          <article class="panel family-panel" id="familyPanel"><div class="panel-heading"><div><span class="panel-kicker">YOUR PEOPLE</span><h3>Family members</h3></div><button class="subtle-link" data-section-link="family">View all <span>→</span></button></div><div id="familyMembers" class="record-list"></div><button class="outline-action" id="addMemberButton">＋ Add family member</button></article>
+          <article class="panel medications-panel" id="medicationsPanel"><div class="panel-heading"><div><span class="panel-kicker">EVERYDAY WELLNESS</span><h3>Medication schedule</h3></div><button class="subtle-link" data-section-link="medications">View all <span>→</span></button></div><div id="medications" class="record-list"></div></article>
+          <article class="panel doctors-panel" id="doctorsPanel"><div class="panel-heading"><div><span class="panel-kicker">HERE FOR YOU</span><h3>Your care team</h3></div><button class="subtle-link" data-section-link="doctors">View all <span>→</span></button></div><div id="doctors" class="record-list"></div></article>
+        </section>
+        <section class="forms-grid">
+          <article class="panel form-panel" id="familyFormPanel" hidden><div class="panel-heading"><div><span class="panel-kicker">GROW YOUR CARE CIRCLE</span><h3>Add a family member</h3></div><button class="close-panel" data-close-form aria-label="Close form">×</button></div><form id="familyForm" class="data-form">
+            <label>Name<input name="name" required placeholder="Full name" /></label><label>Role<select name="role"><option>Dependent</option><option>Primary member</option><option>Caregiver</option></select></label><label>Age<input name="age" type="number" min="0" placeholder="Age" /></label><label>Conditions<input name="conditions" placeholder="e.g. Asthma (optional)" /></label><label>Medications<input name="medications" placeholder="Current medications (optional)" /></label><label>Doctor<input name="doctor" placeholder="Assigned physician" /></label><button class="primary-action" type="submit">Save family member</button></form></article>
+          <article class="panel form-panel" id="appointmentFormPanel" hidden><div class="panel-heading"><div><span class="panel-kicker">PLAN AHEAD</span><h3>Schedule an appointment</h3></div><button class="close-panel" data-close-form aria-label="Close form">×</button></div><form id="appointmentForm" class="data-form">
+            <label>Patient<input name="patient" required placeholder="Family member name" /></label><label>Doctor<input name="doctor" required placeholder="Doctor's name" /></label><label>Date<input name="date" type="date" required /></label><label>Time<input name="time" required placeholder="e.g. 10:30 AM" /></label><label>Visit type<input name="type" placeholder="Consultation / Follow-up" /></label><button class="primary-action" type="submit">Save appointment</button></form></article>
+        </section>
+        <footer class="dashboard-footer"><span>✳ Healthcare OS</span><span>Organised care, a little more peace of mind.</span><span>Demo data · Not for clinical use</span></footer>
+      </div>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
 </html>
