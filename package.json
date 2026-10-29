@@ -1,6 +1,6 @@
 {
   "name": "healthcare-os",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "description": "Family Healthcare OS starter application",
   "main": "server.js",
   "scripts": {
@@ -8,7 +8,6 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "express-session": "^1.18.1"
+    "express": "^4.19.2"
   }
 }
