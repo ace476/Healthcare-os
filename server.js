@@ -84,6 +84,15 @@ app.get('/api/medications', (req, res) => {
   res.json(medications);
 });
 
+const medicalRecords=[{title:'Complete blood count',category:'Lab report',member:'Asha Patel',date:'2026-10-18',clinic:'MediCare Clinic'},{title:'Prescription summary',category:'Prescription',member:'Rohit Patel',date:'2026-10-22',clinic:'Sunrise Child Care'},{title:'Discharge summary',category:'Clinical summary',member:'Mohan Patel',date:'2026-09-30',clinic:'CareBridge Hospital'}];
+const healthMetrics=[{metric:'Blood pressure',value:'118/76',unit:'mmHg',member:'Asha Patel',date:'2026-11-01'},{metric:'Weight',value:'62',unit:'kg',member:'Asha Patel',date:'2026-10-28'},{metric:'Blood glucose',value:'96',unit:'mg/dL',member:'Mohan Patel',date:'2026-10-27'}];
+const emergencyInfo=[{member:'Asha Patel',bloodGroup:'B+',allergies:'Not provided',contact:'Family contact (sample)',phone:'Not provided',conditions:'Hypothyroidism'},{member:'Rohit Patel',bloodGroup:'Not provided',allergies:'Not provided',contact:'Asha Patel (sample)',phone:'Not provided',conditions:'Asthma'},{member:'Mohan Patel',bloodGroup:'Not provided',allergies:'Not provided',contact:'Family contact (sample)',phone:'Not provided',conditions:'Arthritis'}];
+const notifications=[{title:'Appointment reminder',detail:'Rohit Patel · Pediatric review',date:'2026-11-04',kind:'Appointment',status:'Upcoming'},{title:'Follow-up to plan',detail:'Mohan Patel · General consultation',date:'2026-11-06',kind:'Care task',status:'To review'},{title:'Review medication list',detail:'Check the sample medication list',date:'2026-11-01',kind:'Reminder',status:'To review'}];
+app.get('/api/medical-records',(req,res)=>res.json(medicalRecords));
+app.get('/api/health-metrics',(req,res)=>res.json(healthMetrics));
+app.get('/api/emergency-info',(req,res)=>res.json(emergencyInfo));
+app.get('/api/notifications',(req,res)=>res.json(notifications));
+
 app.get('/api/doctors', (req, res) => {
   res.json(doctors);
 });
