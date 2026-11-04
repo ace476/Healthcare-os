@@ -100,7 +100,7 @@ async function isCompromisedPassword(password) {
     signal: AbortSignal.timeout(7000)
   });
   if (!response.ok) throw new Error('Password screening service unavailable');
-  const lines = (await response.text()).split(/\\r?\\n/);
+  const lines = (await response.text()).split(/\r?\n/);
   return lines.some(line => {
     const [candidate, count] = line.trim().split(':');
     return candidate?.toUpperCase() === suffix && Number(count) > 0;
@@ -117,7 +117,7 @@ app.post('/api/auth/signup', asyncRoute(async (req, res) => {
   const email = text(req.body?.email, 254).toLowerCase();
   const password = typeof req.body?.password === 'string' ? req.body.password : '';
   if (name.length < 2) return res.status(400).json({ error: 'Enter your full name (at least 2 characters).' });
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address.' });
   if (password.length < 8 || password.length > 128) return res.status(400).json({ error: 'Your password must contain between 8 and 128 characters.' });
 
   let compromised;
