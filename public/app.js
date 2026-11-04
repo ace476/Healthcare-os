@@ -4,6 +4,24 @@
   const $ = id => document.getElementById(id);
   const notice = $('authNotice');
   const supabase = window.supabaseClient || null;
+  const params = new URLSearchParams(window.location.search);
+  const recoveryMode = params.get('mode') === 'recovery';
+  const rememberMe = $('rememberMe');
+
+  function safeNextPath() {
+    const requested = params.get('next') || '/dashboard.html';
+    if (!requested.startsWith('/') || requested.startsWith('//') || requested.includes('\\')) return '/dashboard.html';
+    try {
+      const target = new URL(requested, window.location.origin);
+      if (target.origin !== window.location.origin || target.pathname === '/login.html') return '/dashboard.html';
+      return target.pathname + target.search + target.hash;
+    } catch (_) {
+      return '/dashboard.html';
+    }
+  }
+  function continueAfterAuth() {
+    window.location.replace(safeNextPath());
+  }
 
   function showNotice(message, kind = 'error') {
     if (!notice) return;
@@ -52,6 +70,27 @@
   $('signInTab')?.addEventListener('click', () => setAuthMode('signin'));
   $('signUpTab')?.addEventListener('click', () => setAuthMode('signup'));
 
+  if (rememberMe) {
+    let shouldRemember = true;
+    try {
+      shouldRemember = window.localStorage.getItem('healthcare-os-remember-session') !== 'false';
+    } catch (_) {
+      shouldRemember = false;
+    }
+    rememberMe.checked = shouldRemember;
+    rememberMe.addEventListener('change', () => {
+      try {
+        window.localStorage.setItem('healthcare-os-remember-session', String(rememberMe.checked));
+        // Supabase chooses its storage adapter when the client is created.
+        // Reload so the next client uses the selected browser storage safely.
+        window.location.reload();
+      } catch (error) {
+        rememberMe.checked = true;
+        showNotice('This browser does not allow changing the sign-in storage preference.');
+      }
+    });
+  }
+
   document.querySelectorAll('.password-toggle').forEach(button => {
     button.addEventListener('click', () => {
       const input = $(button.dataset.target);
@@ -76,7 +115,7 @@
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      window.location.assign('/dashboard.html');
+      continueAfterAuth();
     } catch (error) {
       console.error('Healthcare OS sign-in failed:', error);
       showNotice(error.message || 'Unable to sign in. Please try again.');
@@ -109,7 +148,7 @@
       if (result?.session) {
         const { error: sessionError } = await supabase.auth.setSession(result.session);
         if (sessionError) throw sessionError;
-        window.location.assign('/dashboard.html');
+        continueAfterAuth();
         return;
       }
       setAuthMode('signin');
@@ -158,10 +197,22 @@
     showNotice('Privacy notice: this prototype uses sample records. Do not enter real or sensitive health information.', 'success');
   });
 
-  const params = new URLSearchParams(window.location.search);
   setAuthMode(params.get('mode') === 'signup' ? 'signup' : 'signin');
-  if (params.get('mode') === 'recovery') {
+  if (recoveryMode) {
     showNotice('Password recovery link opened. Password update will be available after the secure recovery screen is completed.', 'success');
+  }
+
+  // Keep signed-in users out of the login screen. Recovery links stay on this page.
+  if (supabase?.auth && !recoveryMode) {
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) throw error;
+      if (data?.session) continueAfterAuth();
+    }).catch(error => {
+      console.error('Healthcare OS could not restore the existing session:', error);
+    });
+    supabase.auth.onAuthStateChange(event => {
+      if (event === 'SIGNED_IN') continueAfterAuth();
+    });
   }
   if (!supabase?.auth) {
     console.error('Healthcare OS: Supabase client unavailable. Check the Supabase CDN and configuration scripts.');
