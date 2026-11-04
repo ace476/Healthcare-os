@@ -57,3 +57,10 @@ The sample data is fictional. New accounts are created in server memory for this
 - Node.js and Express
 - express-session
 - Vanilla JavaScript, HTML, and CSS
+
+
+## Medical document uploads (local prototype)
+
+The Medical records workspace supports local uploads of PDF, JPG, PNG, and WEBP files up to 10 MB. Uploaded files are stored outside the public web directory in `data/uploads/`; document metadata is stored in `data/medical-records.json`. The download endpoint streams files without exposing the storage directory as a static asset.
+
+**Hosted uploads are deliberately disabled on Vercel.** Its function filesystem is ephemeral, and this project does not yet have a private persistent object store or per-user document authorization. Do not upload real patient information. Before enabling hosted uploads, connect private object storage, enforce authenticated family/tenant access for upload/list/download/delete, add malware/content inspection and audit logging, and verify retention and backup policies. Local uploads are for development and demonstration only.
