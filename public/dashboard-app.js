@@ -9,6 +9,13 @@ function loginRedirectUrl() {
   return '/login.html?next=' + encodeURIComponent(next);
 }
 
+// Subscribe immediately so a sign-out in another tab closes this protected view too.
+if (client?.auth) {
+  client.auth.onAuthStateChange(event => {
+    if (event === 'SIGNED_OUT') window.location.replace('/login.html');
+  });
+}
+
 async function api(url, options = {}) {
   if (!client?.auth) throw new Error('Secure sign-in is unavailable. Refresh the page and try again.');
   const { data: { session } } = await client.auth.getSession();
@@ -111,9 +118,6 @@ async function boot() {
     event.preventDefault();
     await client.auth.signOut();
     window.location.replace('/login.html');
-  });
-  client.auth.onAuthStateChange((event, nextSession) => {
-    if (event === 'SIGNED_OUT' || !nextSession) window.location.replace('/login.html');
   });
   bindForm('familyForm','/api/family-members','familyFeedback');
   bindForm('appointmentForm','/api/appointments','appointmentFeedback');
