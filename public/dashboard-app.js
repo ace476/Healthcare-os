@@ -9,6 +9,60 @@ function loginRedirectUrl() {
   return '/login.html?next=' + encodeURIComponent(next);
 }
 
+function setupAccountMenu(me) {
+  const host = document.querySelector('.topbar-right');
+  if (!host) return;
+  const display = me.name || me.email || 'My account';
+  const initials = display.trim().split(/\\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'U';
+  host.innerHTML =
+    '<a class="top-dashboard-link' + (pageName === 'overview' ? ' is-active' : '') + '" href="/dashboard.html"><span aria-hidden="true">⌂</span> Dashboard</a>' +
+    '<div class="account-menu-wrap">' +
+      '<button class="account-menu-toggle" id="accountMenuToggle" type="button" aria-expanded="false" aria-controls="accountMenuPanel">' +
+        '<span class="top-avatar">' + esc(initials) + '</span>' +
+        '<span class="account-menu-label"><strong>' + esc(display) + '</strong><small>My account</small></span>' +
+        '<span class="account-menu-chevron" aria-hidden="true">⌄</span>' +
+      '</button>' +
+      '<div class="account-menu-panel" id="accountMenuPanel" hidden>' +
+        '<div class="account-menu-heading"><strong>' + esc(display) + '</strong><small>' + esc(me.email || '') + '</small></div>' +
+        '<a href="/settings.html"><span aria-hidden="true">⚙</span> Account settings</a>' +
+        '<button class="menu-signout-button" type="button"><span aria-hidden="true">↪</span> Sign out</button>' +
+      '</div>' +
+    '</div>';
+
+  const toggle = $('accountMenuToggle');
+  const panel = $('accountMenuPanel');
+  const closeMenu = () => {
+    if (!toggle || !panel) return;
+    panel.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+  };
+  toggle?.addEventListener('click', () => {
+    const opening = panel?.hidden;
+    if (panel) panel.hidden = !opening;
+    toggle.setAttribute('aria-expanded', String(Boolean(opening)));
+  });
+  document.addEventListener('click', event => {
+    if (!event.target.closest('.account-menu-wrap')) closeMenu();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      closeMenu();
+      toggle?.focus();
+    }
+  });
+  host.querySelector('.menu-signout-button')?.addEventListener('click', async () => {
+    const button = host.querySelector('.menu-signout-button');
+    if (button) button.disabled = true;
+    const { error } = await client.auth.signOut();
+    if (error) {
+      console.error('Healthcare OS sign-out failed:', error);
+      if (button) button.disabled = false;
+      return;
+    }
+    window.location.replace('/login.html');
+  });
+}
+
 // Subscribe immediately so a sign-out in another tab closes this protected view too.
 if (client?.auth) {
   client.auth.onAuthStateChange(event => {
@@ -110,6 +164,7 @@ async function boot() {
   if ($('profileEmail')) $('profileEmail').textContent = me.email || '';
   if ($('profileInitials')) $('profileInitials').textContent = display.slice(0,1).toUpperCase();
   if ($('topInitials')) $('topInitials').textContent = display.slice(0,1).toUpperCase();
+  setupAccountMenu(me);
   await api('/api/family');
 
   document.querySelectorAll('[data-nav]').forEach(link => link.classList.toggle('selected', link.dataset.nav === pageName));
@@ -122,7 +177,18 @@ async function boot() {
   bindForm('familyForm','/api/family-members','familyFeedback');
   bindForm('appointmentForm','/api/appointments','appointmentFeedback');
 
-  if (pageName === 'workspace') {
+  if (pageName === 'settings') {
+    document.title = 'Account settings · Healthcare OS';
+    if ($('settingsName')) $('settingsName').textContent = display;
+    if ($('settingsEmail')) $('settingsEmail').textContent = me.email || 'Not available';
+    if ($('settingsInitials')) $('settingsInitials').textContent = display.slice(0, 1).toUpperCase();
+    let rememberSession = true;
+    try { rememberSession = window.localStorage.getItem('healthcare-os-remember-session') !== 'false'; }
+    catch (_) { rememberSession = false; }
+    if ($('sessionPreference')) $('sessionPreference').textContent = rememberSession
+      ? 'Keep me signed in is enabled on this device.'
+      : 'This browser is using tab-only sign-in storage.';
+  } else if (pageName === 'workspace') {
     const sectionName = new URLSearchParams(location.search).get('section');
     const config = {
       records: ['Medical records','/api/medical-records','Your private document metadata. Secure file upload and download are not enabled yet.'],
