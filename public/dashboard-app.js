@@ -1,38 +1,137 @@
-const $=id=>document.getElementById(id);const pageName=document.body.dataset.page;const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));async function api(url,options={}){const client=window.supabaseClient;if(!client?.auth)throw new Error('Secure sign-in is unavailable. Please refresh and try again.');const {data:{session}}=await client.auth.getSession();if(!session?.access_token){window.location.replace('/login.html');throw new Error('Please sign in to continue.');}const r=await fetch(url,{credentials:'same-origin',...options,headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token,...(options.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Unable to load this information.');return d;}function renderList(id,items,fmt,empty){const el=$(id);if(!el)return;el.innerHTML=items.length?items.map(fmt).join(''):'<p class="empty-state">'+esc(empty||'No records to show.')+'</p>';}function familyCard(m){const i=m.name.split(/\s+/).slice(0,2).map(p=>p[0]).join('').toUpperCase();return '<div class="record-item"><div class="record-avatar family-avatar">'+esc(i)+'</div><div class="record-body"><strong>'+esc(m.name)+'</strong><span>'+esc(m.role)+' · '+esc(m.age)+' years</span><small>'+esc((m.conditions||[]).join(', ')||'No conditions listed')+'</small></div></div>';}function appointmentCard(a){const d=new Date(a.date+'T12:00:00'),day=Number.isNaN(d.getTime())?'--':String(d.getDate()).padStart(2,'0'),month=Number.isNaN(d.getTime())?'---':d.toLocaleDateString('en',{month:'short'}).toUpperCase();return '<div class="record-item"><div class="date-chip"><strong>'+day+'</strong><span>'+month+'</span></div><div class="record-body"><strong>'+esc(a.patient)+'</strong><span>'+esc(a.type)+' · '+esc(a.time)+'</span><small>'+esc(a.doctor)+' · '+esc(a.date)+'</small></div></div>';}function medCard(m){return '<div class="record-item"><div class="record-avatar med-avatar">✚</div><div class="record-body"><strong>'+esc(m.name)+'</strong><span>'+esc(m.member)+'</span><small>'+esc(m.dose)+' · '+esc(m.schedule)+'</small></div><span class="med-status">Listed</span></div>';}function doctorCard(d){const i=d.name.replace('Dr. ','').split(/\s+/).slice(0,2).map(p=>p[0]).join('').toUpperCase();return '<div class="record-item"><div class="record-avatar doctor-avatar">'+esc(i)+'</div><div class="record-body"><strong>'+esc(d.name)+'</strong><span>'+esc(d.specialty)+'</span><small>'+esc(d.clinic)+' · '+esc(d.available)+'</small></div></div>';}async function load(){try{const [f,a,m,d]=await Promise.all([api('/api/family'),api('/api/appointments'),api('/api/medications'),api('/api/doctors')]);if($('memberCount'))$('memberCount').textContent=f.members.length;if($('appointmentCount'))$('appointmentCount').textContent=a.length;if($('medicationCount'))$('medicationCount').textContent=m.length;if($('doctorCount'))$('doctorCount').textContent=d.length;if($('navAppointmentCount'))$('navAppointmentCount').textContent=a.length;renderList('overviewAppointments',a.slice(0,3),appointmentCard);renderList('overviewFamily',f.members.slice(0,3),familyCard);renderList('overviewMedications',m.slice(0,3),medCard);renderList('overviewDoctors',d.slice(0,3),doctorCard);renderList('familyList',f.members,familyCard,'No family members added yet.');renderList('appointmentList',a,appointmentCard,'No appointments scheduled yet.');renderList('medicationList',m,medCard,'No medications listed.');renderList('doctorList',d,doctorCard,'No care team members listed.');}catch(e){document.querySelectorAll('.record-list').forEach(el=>el.innerHTML='<p class="empty-state">'+esc(e.message)+'</p>');}}function bindForm(id,endpoint,feedbackId){const form=$(id);if(!form)return;form.addEventListener('submit',async e=>{e.preventDefault();const btn=form.querySelector('button[type="submit"]'),feedback=$(feedbackId);btn.disabled=true;try{await api(endpoint,{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(form).entries()))});form.reset();if(feedback)feedback.textContent='Saved successfully.';await load();}catch(err){if(feedback)feedback.textContent=err.message;else alert(err.message);}finally{btn.disabled=false;}});}const signOutLink=document.querySelector('.signout-button');signOutLink?.addEventListener('click',async e=>{e.preventDefault();try{await window.supabaseClient?.auth.signOut();}finally{window.location.replace('/login.html');}});window.supabaseClient?.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'||!session)window.location.replace('/login.html');});document.querySelectorAll('[data-nav]').forEach(a=>{if(a.dataset.nav===pageName)a.classList.add('selected');});$('mobileMenu')?.addEventListener('click',()=>$('sidebar')?.classList.toggle('sidebar-open'));bindForm('familyForm','/api/family-members','familyFeedback');bindForm('appointmentForm','/api/appointments','appointmentFeedback');$('profileName')&&($('profileName').textContent=new URLSearchParams(location.search).get('mode')==='demo'?'Demo workspace':'Care workspace');$('profileEmail')&&($('profileEmail').textContent='Sample information only');load();
-const extraSections={records:{title:'Medical records',url:'/api/medical-records',id:'sectionRecords',intro:'Upload and search PDF or image reports in this local prototype. Do not upload real patient information. Hosted uploads are disabled until private persistent storage and access controls are configured.',render:r=>'<div class="record-item"><div class="record-avatar">▤</div><div class="record-body"><strong>'+esc(r.title)+'</strong><span>'+esc(r.category)+' · '+esc(r.member)+'</span><small>'+esc(r.date)+' · '+esc(r.originalName||r.clinic||'Sample entry')+'</small></div>'+(r.source==='uploaded'?'<a class="subtle-link" href="/api/medical-records/'+encodeURIComponent(r.id)+'/download">Download ↓</a>':'<span class="med-status">Sample</span>')+'</div>'},tracking:{title:'Health tracking',url:'/api/health-metrics',id:'sectionTracking',intro:'All values are fictional demonstration data, not medical advice or real measurements.',render:m=>'<div class="record-item"><div class="record-avatar med-avatar">⌁</div><div class="record-body"><strong>'+esc(m.metric)+': '+esc(m.value)+' '+esc(m.unit)+'</strong><span>'+esc(m.member)+'</span><small>'+esc(m.date)+'</small></div></div>'},emergency:{title:'Emergency information',url:'/api/emergency-info',id:'sectionEmergency',intro:'Sample information is incomplete. Verify all details with the individual and their care team. For urgent help, contact local emergency services.',render:e=>'<div class="record-item"><div class="record-avatar doctor-avatar">✚</div><div class="record-body"><strong>'+esc(e.member)+'</strong><span>Blood group: '+esc(e.bloodGroup)+' · Allergies: '+esc(e.allergies)+'</span><small>Contact: '+esc(e.contact)+' · '+esc(e.phone)+' · Conditions: '+esc(e.conditions)+'</small></div></div>'},notifications:{title:'Notifications',url:'/api/notifications',id:'sectionNotifications',intro:'These are sample reminders. Email, SMS, push delivery, and reminder scheduling are not configured yet.',render:n=>'<div class="record-item"><div class="record-avatar family-avatar">♧</div><div class="record-body"><strong>'+esc(n.title)+'</strong><span>'+esc(n.detail)+'</span><small>'+esc(n.kind)+' · '+esc(n.date)+'</small></div><span class="med-status">'+esc(n.status)+'</span></div>'}};
-const requestedSection=new URLSearchParams(location.search).get('section');
-if(requestedSection&&extraSections[requestedSection]){const section=extraSections[requestedSection];document.body.dataset.page=requestedSection;document.title=section.title+' · Healthcare OS';const main=document.querySelector('.dashboard-content');if(main){main.innerHTML='<div class="welcome-row"><div><span class="eyebrow">HEALTHCARE OS WORKSPACE</span><h1>'+section.title+'</h1><p>Keep important care information organised and easy to find.</p></div></div><div class="detail-callout"><strong>'+section.title+'</strong>'+section.intro+'</div>'+(requestedSection==='records'?"<section class=\"panel upload-panel\"><div class=\"panel-heading\"><div><span class=\"panel-kicker\">ADD A DOCUMENT</span><h3>Upload a medical report</h3></div></div><form id=\"recordUploadForm\" class=\"data-form\" enctype=\"multipart/form-data\"><label>Document title<input name=\"title\" required maxlength=\"120\" placeholder=\"e.g. Blood test report\"/></label><label>Document type<select name=\"category\"><option>Lab report</option><option>Prescription</option><option>Imaging</option><option>Discharge summary</option><option>Clinical summary</option><option>Other</option></select></label><label>Family member<input name=\"member\" required maxlength=\"100\" placeholder=\"Patient or family member\"/></label><label>Document date<input name=\"date\" type=\"date\" required/></label><label class=\"upload-file-label\">Choose file<input name=\"file\" type=\"file\" accept=\".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp\" required/><small>PDF, JPG, PNG or WEBP · Maximum 10 MB</small></label><button class=\"primary-action\" type=\"submit\">Upload document</button><p class=\"form-feedback\" id=\"recordUploadFeedback\" role=\"status\" aria-live=\"polite\"></p></form></section><section class=\"panel records-panel\"><div class=\"panel-heading\"><div><span class=\"panel-kicker\">YOUR DOCUMENT LIBRARY</span><h3>Find a document</h3></div><span id=\"recordResultCount\" class=\"med-status\"></span></div><label class=\"record-search-label\">Search records<input id=\"recordSearch\" type=\"search\" placeholder=\"Search title, type or family member\"/></label><div id=\"sectionRecords\" class=\"record-list\"></div></section>"+:'<section class="panel" style="margin-top:16px"><div class="panel-heading"><div><span class="panel-kicker">YOUR WORKSPACE</span><h3>'+section.title+'</h3></div></div><div id="'+section.id+'" class="record-list"></div></section>')+'<footer class="dashboard-footer"><span>✳ Healthcare OS</span><span>Demo data · Not for clinical use</span></footer>';api(section.url).then(items=>renderList(section.id,items,section.render,'No records to show.')).catch(err=>renderList(section.id,[],section.render,err.message));}}
-const navHost=document.querySelector('.side-nav');if(navHost&&!navHost.querySelector('[data-nav="records"]')){[['records','Medical records','▤'],['tracking','Health tracking','⌁'],['emergency','Emergency info','✚'],['notifications','Notifications','♧']].forEach(([key,label,glyph])=>{const a=document.createElement('a');a.className='nav-link';a.dataset.nav=key;a.href='/workspace.html?section='+key;a.innerHTML='<span class="nav-icon">'+glyph+'</span> '+label;navHost.appendChild(a);});}
-document.querySelectorAll('[data-nav]').forEach(a=>a.classList.toggle('selected',a.dataset.nav===document.body.dataset.page));
+'use strict';
+const $ = id => document.getElementById(id);
+const pageName = document.body.dataset.page || '';
+const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const client = window.supabaseClient;
 
-async function enhanceOverview(){if(document.body.dataset.page!=='overview')return;const heading=$('welcomeHeading'),sub=$('welcomeSubheading');const now=new Date();if(heading){const hour=now.getHours();heading.textContent=(hour<12?'Good morning':hour<18?'Good afternoon':'Good evening')+', welcome back';}if(sub)sub.textContent=now.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' · Here is your care overview.';try{const [family,appointments,meds,doctors,records,notices]=await Promise.all([api('/api/family'),api('/api/appointments'),api('/api/medications'),api('/api/doctors'),api('/api/medical-records'),api('/api/notifications')]);const today=new Date();today.setHours(0,0,0,0);const upcoming=appointments.filter(a=>{const d=new Date(a.date+'T00:00:00');return !Number.isNaN(d.getTime())&&d>=today;}).sort((a,b)=>a.date.localeCompare(b.date));if($('appointmentCount'))$('appointmentCount').textContent=upcoming.length;if($('navAppointmentCount'))$('navAppointmentCount').textContent=upcoming.length;const activity=[...appointments.map(a=>({date:a.date,title:'Appointment scheduled',detail:a.patient+' · '+a.type,kind:'Appointment'})),...meds.map(m=>({date:'',title:'Medication on care list',detail:m.name+' · '+m.member,kind:'Medication'})),...records.map(r=>({date:r.date,title:'Medical record available',detail:r.title+' · '+r.member,kind:'Record'}))].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);renderList('recentActivityList',activity,x=>'<div class="record-item"><div class="record-avatar">'+(x.kind==='Appointment'?'▦':x.kind==='Medication'?'✚':'▤')+'</div><div class="record-body"><strong>'+esc(x.title)+'</strong><span>'+esc(x.detail)+'</span><small>'+(x.date?esc(x.date):'Sample workspace activity')+'</small></div></div>','No recent activity yet.');const reminders=notices.filter(n=>n.status!=='Completed');const next=upcoming.slice(0,2).map(a=>({title:'Upcoming appointment',detail:a.patient+' · '+a.doctor,date:a.date}));const reminderItems=[...next,...reminders.map(n=>({title:n.title,detail:n.detail,date:n.date}))].slice(0,5);renderList('healthRemindersList',reminderItems,x=>'<div class="record-item"><div class="record-avatar reminder-avatar">◷</div><div class="record-body"><strong>'+esc(x.title)+'</strong><span>'+esc(x.detail)+'</span><small>'+esc(x.date||'Date to be confirmed')+'</small></div></div>','No reminders right now.');}catch(err){renderList('recentActivityList',[],()=>'',err.message);renderList('healthRemindersList',[],()=>'',err.message);}}
-enhanceOverview();
-
-if(requestedSection==='records'){
- const form=$('recordUploadForm'), feedback=$('recordUploadFeedback'), search=$('recordSearch');
- let rows=[];
- const render=()=>{const q=(search?.value||'').trim().toLowerCase();const found=rows.filter(r=>[r.title,r.category,r.member,r.originalName].some(v=>String(v||'').toLowerCase().includes(q)));if($('recordResultCount'))$('recordResultCount').textContent=found.length+' shown';renderList('sectionRecords',found,extraSections.records.render,'No matching documents.');};
- const refresh=()=>api('/api/medical-records').then(data=>{rows=data;render();}).catch(e=>{if(feedback)feedback.textContent=e.message;});
- search?.addEventListener('input',render);
- form?.addEventListener('submit',async e=>{e.preventDefault();const btn=form.querySelector('button[type=submit]');btn.disabled=true;feedback.textContent='Uploading…';try{const response=await fetch('/api/medical-records',{method:'POST',body:new FormData(form)});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Upload failed.');form.reset();feedback.textContent='Document uploaded and saved on this local server.';await refresh();}catch(error){feedback.textContent=error.message;}finally{btn.disabled=false;}});
- refresh();
+async function api(url, options = {}) {
+  if (!client?.auth) throw new Error('Secure sign-in is unavailable. Refresh the page and try again.');
+  const { data: { session } } = await client.auth.getSession();
+  if (!session?.access_token) {
+    window.location.replace('/login.html');
+    throw new Error('Please sign in to continue.');
+  }
+  const response = await fetch(url, {
+    ...options,
+    credentials: 'same-origin',
+    headers: { ...(options.headers || {}), Authorization: 'Bearer ' + session.access_token,
+      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }) }
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || 'Unable to complete this request.');
+  return body;
 }
 
-
-// Sign out of Supabase accounts; the demo workspace remains a separate sample flow.
-document.querySelector('.signout-button')?.addEventListener('click', async event => {
-  if (new URLSearchParams(location.search).get('mode') === 'demo') return;
-  event.preventDefault();
-  const link = event.currentTarget;
-  link.setAttribute('aria-disabled', 'true');
-  try {
-    if (window.supabaseClient) {
-      const { error } = await window.supabaseClient.auth.signOut();
-      if (error) throw error;
+function renderList(id, items, render, emptyText = 'No records to show.') {
+  const host = $(id);
+  if (!host) return;
+  host.innerHTML = items.length ? items.map(render).join('') : '<p class="empty-state">' + esc(emptyText) + '</p>';
+}
+function familyCard(member) {
+  const initials = String(member.name || 'U').split(/\s+/).slice(0,2).map(part => part[0]).join('').toUpperCase();
+  return '<div class="record-item"><div class="record-avatar family-avatar">' + esc(initials) + '</div><div class="record-body"><strong>' + esc(member.name) + '</strong><span>' + esc(member.role) + (member.age !== '' ? ' · ' + esc(member.age) + ' years' : '') + '</span><small>' + esc((member.conditions || []).join(', ') || 'No notes added') + '</small></div></div>';
+}
+function appointmentCard(item) {
+  const date = new Date(item.date + 'T12:00:00Z');
+  const day = Number.isNaN(date.getTime()) ? '--' : String(date.getUTCDate()).padStart(2,'0');
+  const month = Number.isNaN(date.getTime()) ? '---' : date.toLocaleDateString('en',{month:'short',timeZone:'UTC'}).toUpperCase();
+  return '<div class="record-item"><div class="date-chip"><strong>' + day + '</strong><span>' + month + '</span></div><div class="record-body"><strong>' + esc(item.patient) + '</strong><span>' + esc(item.type) + ' · ' + esc(item.time) + '</span><small>' + esc(item.doctor) + ' · ' + esc(item.date) + '</small></div><span class="med-status">' + esc(item.status || 'scheduled') + '</span></div>';
+}
+function medicationCard(item) {
+  return '<div class="record-item"><div class="record-avatar med-avatar">✚</div><div class="record-body"><strong>' + esc(item.name) + '</strong><span>' + esc(item.member) + '</span><small>' + esc(item.dose) + ' · ' + esc(item.schedule) + '</small></div><span class="med-status">' + esc(item.status || 'active') + '</span></div>';
+}
+function doctorCard(item) {
+  return '<div class="record-item"><div class="record-avatar doctor-avatar">♡</div><div class="record-body"><strong>' + esc(item.name) + '</strong><span>' + esc(item.specialty) + '</span><small>' + esc(item.clinic) + ' · ' + esc(item.available) + '</small></div></div>';
+}
+function genericCard(item) {
+  const title = item.title || item.metric_name || item.blood_group || item.kind || 'Record';
+  const detail = item.body || item.value_text || [item.value_numeric, item.unit].filter(Boolean).join(' ') || item.allergies || item.conditions || '';
+  const date = item.created_at || item.measured_at || item.updated_at || item.document_date || '';
+  return '<div class="record-item"><div class="record-avatar">▤</div><div class="record-body"><strong>' + esc(title) + '</strong><span>' + esc(detail) + '</span><small>' + esc(date ? String(date).slice(0,10) : '') + '</small></div></div>';
+}
+async function loadDashboard() {
+  const [family, appointments, medications, doctors] = await Promise.all([
+    api('/api/family'), api('/api/appointments'), api('/api/medications'), api('/api/doctors')
+  ]);
+  if ($('memberCount')) $('memberCount').textContent = family.members.length;
+  if ($('appointmentCount')) $('appointmentCount').textContent = appointments.length;
+  if ($('medicationCount')) $('medicationCount').textContent = medications.length;
+  if ($('doctorCount')) $('doctorCount').textContent = doctors.length;
+  if ($('navAppointmentCount')) $('navAppointmentCount').textContent = appointments.length;
+  renderList('overviewAppointments', appointments.slice(0,3), appointmentCard);
+  renderList('overviewFamily', family.members.slice(0,3), familyCard);
+  renderList('overviewMedications', medications.slice(0,3), medicationCard);
+  renderList('overviewDoctors', doctors.slice(0,3), doctorCard);
+  renderList('familyList', family.members, familyCard, 'Your family workspace is ready. Add your first member below.');
+  renderList('appointmentList', appointments, appointmentCard, 'No appointments scheduled yet.');
+  renderList('medicationList', medications, medicationCard, 'No medications have been added.');
+  renderList('doctorList', doctors, doctorCard, 'No care professionals have been added.');
+}
+function bindForm(id, endpoint, feedbackId) {
+  const form = $(id);
+  if (!form) return;
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = form.querySelector('button[type="submit"]');
+    const feedback = $(feedbackId);
+    if (button) button.disabled = true;
+    if (feedback) feedback.textContent = 'Saving…';
+    try {
+      await api(endpoint, { method:'POST', body:JSON.stringify(Object.fromEntries(new FormData(form).entries())) });
+      form.reset();
+      if (feedback) feedback.textContent = 'Saved to your private workspace.';
+      await loadDashboard();
+    } catch (error) {
+      if (feedback) feedback.textContent = error.message;
+    } finally {
+      if (button) button.disabled = false;
     }
-    window.location.assign('/login.html');
-  } catch (error) {
-    link.removeAttribute('aria-disabled');
-    alert(error.message || 'Unable to sign out. Please try again.');
+  });
+}
+async function boot() {
+  if (!client?.auth) { window.location.replace('/login.html'); return; }
+  const { data: { session } } = await client.auth.getSession();
+  if (!session) { window.location.replace('/login.html'); return; }
+  const me = await api('/api/me');
+  const display = me.name || me.email || 'My workspace';
+  if ($('profileName')) $('profileName').textContent = display;
+  if ($('profileEmail')) $('profileEmail').textContent = me.email || '';
+  if ($('profileInitials')) $('profileInitials').textContent = display.slice(0,1).toUpperCase();
+  if ($('topInitials')) $('topInitials').textContent = display.slice(0,1).toUpperCase();
+
+  document.querySelectorAll('[data-nav]').forEach(link => link.classList.toggle('selected', link.dataset.nav === pageName));
+  $('mobileMenu')?.addEventListener('click', () => $('sidebar')?.classList.toggle('sidebar-open'));
+  document.querySelector('.signout-button')?.addEventListener('click', async event => {
+    event.preventDefault();
+    await client.auth.signOut();
+    window.location.replace('/login.html');
+  });
+  client.auth.onAuthStateChange((event, nextSession) => {
+    if (event === 'SIGNED_OUT' || !nextSession) window.location.replace('/login.html');
+  });
+  bindForm('familyForm','/api/family-members','familyFeedback');
+  bindForm('appointmentForm','/api/appointments','appointmentFeedback');
+
+  if (pageName === 'workspace') {
+    const sectionName = new URLSearchParams(location.search).get('section');
+    const config = {
+      records: ['Medical records','/api/medical-records','Your private document metadata. Secure file upload and download are not enabled yet.'],
+      tracking: ['Health tracking','/api/health-metrics','Health measurements saved in your workspace.'],
+      emergency: ['Emergency information','/api/emergency-info','Emergency details saved in your workspace.'],
+      notifications: ['Notifications','/api/notifications','Private notifications for your account.']
+    }[sectionName];
+    const main = document.querySelector('.dashboard-content');
+    if (config && main) {
+      document.title = config[0] + ' · Healthcare OS';
+      main.innerHTML = '<div class="welcome-row"><div><span class="eyebrow">YOUR PRIVATE WORKSPACE</span><h1>' + esc(config[0]) + '</h1><p>' + esc(config[2]) + '</p></div></div><section class="panel"><div id="workspaceRecords" class="record-list"><p class="empty-state">Loading…</p></div></section>';
+      try { const rows = await api(config[1]); renderList('workspaceRecords', rows, genericCard); }
+      catch (error) { renderList('workspaceRecords', [], genericCard, error.message); }
+    }
+  } else {
+    await loadDashboard();
   }
+}
+boot().catch(error => {
+  console.error('Healthcare OS workspace could not load:', error);
+  document.querySelectorAll('.record-list').forEach(host => { host.textContent = error.message; });
 });
