@@ -98,6 +98,7 @@ async function boot() {
   if ($('profileEmail')) $('profileEmail').textContent = me.email || '';
   if ($('profileInitials')) $('profileInitials').textContent = display.slice(0,1).toUpperCase();
   if ($('topInitials')) $('topInitials').textContent = display.slice(0,1).toUpperCase();
+  await api('/api/family');
 
   document.querySelectorAll('[data-nav]').forEach(link => link.classList.toggle('selected', link.dataset.nav === pageName));
   $('mobileMenu')?.addEventListener('click', () => $('sidebar')?.classList.toggle('sidebar-open'));
