@@ -7,6 +7,7 @@
   const params = new URLSearchParams(window.location.search);
   const recoveryMode = params.get('mode') === 'recovery';
   const rememberMe = $('rememberMe');
+  let recoveryReady = false;
 
   function safeNextPath() {
     const requested = params.get('next') || '/dashboard.html';
@@ -65,6 +66,26 @@
     if (supabase?.auth) return true;
     showNotice('The secure sign-up service did not load. Please refresh this page. If it continues, try another network or browser.');
     return false;
+  }
+
+  function showRecoveryForm(ready) {
+    recoveryReady = ready;
+    const recoveryForm = $('recoveryForm');
+    if (!recoveryForm) return;
+    $('authTabs')?.setAttribute('hidden', '');
+    $('signInForm')?.setAttribute('hidden', '');
+    $('signUpForm')?.setAttribute('hidden', '');
+    recoveryForm.hidden = false;
+    $('authTitle').textContent = 'Choose a new password';
+    $('authSubtitle').textContent = 'Create a new password to secure your account.';
+    $('recoveryPassword').disabled = !ready;
+    $('recoveryConfirm').disabled = !ready;
+    recoveryForm.querySelector('button[type="submit"]').disabled = !ready;
+    if (!ready) showNotice('Open the password reset link from your email in this browser. If the link has expired, request a new one.', 'success');
+    else clearNotice();
+    document.querySelector('.divider')?.setAttribute('hidden', '');
+    $('demoButton')?.setAttribute('hidden', '');
+    document.querySelector('.auth-legal')?.setAttribute('hidden', '');
   }
 
   $('signInTab')?.addEventListener('click', () => setAuthMode('signin'));
@@ -163,6 +184,30 @@
     }
   });
 
+  $('recoveryForm')?.addEventListener('submit', async event => {
+    event.preventDefault();
+    clearNotice();
+    if (!authReady()) return;
+    if (!recoveryReady) return showNotice('Open a valid password reset link from your email first.');
+    const password = $('recoveryPassword')?.value || '';
+    const confirmation = $('recoveryConfirm')?.value || '';
+    if (password.length < 8 || password.length > 128) return showNotice('Your new password must contain between 8 and 128 characters.');
+    if (password !== confirmation) return showNotice('The passwords do not match.');
+    const form = event.currentTarget;
+    setBusy(form, true, 'Updating password…');
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      await supabase.auth.signOut();
+      window.location.replace('/login.html?password=updated');
+    } catch (error) {
+      console.error('Healthcare OS password update failed:', error);
+      showNotice(error.message || 'Unable to update your password. Request a new reset link and try again.');
+    } finally {
+      setBusy(form, false, 'Update password');
+    }
+  });
+
   $('demoButton')?.addEventListener('click', () => {
     showNotice('Demo access is temporarily unavailable while we finish securing separate family workspaces. Please sign in or create an account to continue.');
   });
@@ -198,9 +243,8 @@
   });
 
   setAuthMode(params.get('mode') === 'signup' ? 'signup' : 'signin');
-  if (recoveryMode) {
-    showNotice('Password recovery link opened. Password update will be available after the secure recovery screen is completed.', 'success');
-  }
+  if (recoveryMode) showRecoveryForm(false);
+  if (params.get('password') === 'updated') showNotice('Your password has been updated. Sign in with your new password.', 'success');
 
   // Keep signed-in users out of the login screen. Recovery links stay on this page.
   if (supabase?.auth && !recoveryMode) {
@@ -211,7 +255,8 @@
       console.error('Healthcare OS could not restore the existing session:', error);
     });
     supabase.auth.onAuthStateChange(event => {
-      if (event === 'SIGNED_IN') continueAfterAuth();
+      if (event === 'PASSWORD_RECOVERY' && recoveryMode) showRecoveryForm(true);
+      else if (event === 'SIGNED_IN' && !recoveryMode) continueAfterAuth();
     });
   }
   if (!supabase?.auth) {
