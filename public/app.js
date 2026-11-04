@@ -99,13 +99,16 @@
     const form = event.currentTarget;
     setBusy(form, true, 'Creating your account…');
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: name } }
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: name, email, password })
       });
-      if (error) throw error;
-      if (data?.session) {
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Unable to create your account. Please try again.');
+      if (result?.session) {
+        const { error: sessionError } = await supabase.auth.setSession(result.session);
+        if (sessionError) throw sessionError;
         window.location.assign('/dashboard.html');
         return;
       }
