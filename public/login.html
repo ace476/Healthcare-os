@@ -38,7 +38,7 @@
           <h2 id="authTitle">Welcome back</h2>
           <p id="authSubtitle">Sign in to pick up where your family left off.</p>
         </div>
-        <div class="auth-tabs" role="tablist" aria-label="Account access">
+        <div class="auth-tabs" id="authTabs" role="tablist" aria-label="Account access">
           <button class="auth-tab active" id="signInTab" type="button" role="tab" aria-selected="true">Sign in</button>
           <button class="auth-tab" id="signUpTab" type="button" role="tab" aria-selected="false">Create account</button>
         </div>
@@ -60,6 +60,13 @@
           <div class="password-wrap"><input id="signupPassword" name="password" type="password" autocomplete="new-password" placeholder="At least 8 characters" required minlength="8" /><button class="password-toggle" type="button" data-target="signupPassword" aria-label="Show password">Show</button></div>
           <label class="check-label terms-check"><input id="agreeTerms" type="checkbox" required /> <span>I agree to the terms and understand this is a demonstration app.</span></label>
           <button class="submit-button" type="submit"><span>Create my account</span><span aria-hidden="true">→</span></button>
+        </form>
+        <form id="recoveryForm" class="auth-fields" novalidate hidden>
+          <label for="recoveryPassword">New password</label>
+          <div class="password-wrap"><input id="recoveryPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" minlength="8" required disabled /><button class="password-toggle" type="button" data-target="recoveryPassword" aria-label="Show password">Show</button></div>
+          <label for="recoveryConfirm">Confirm new password</label>
+          <input id="recoveryConfirm" type="password" autocomplete="new-password" placeholder="Enter your new password again" required disabled />
+          <button class="submit-button" type="submit" disabled><span>Update password</span><span aria-hidden="true">→</span></button>
         </form>
         <div class="divider"><span>OR TRY THE DEMO</span></div>
         <button type="button" class="demo-button" id="demoButton"><span class="demo-avatar">A</span><span class="demo-copy"><strong>Explore the family dashboard</strong><small>Use a sample account · No personal data</small></span><span class="demo-arrow">↗</span></button>
