@@ -17,3 +17,22 @@ if(requestedSection==='records'){
  form?.addEventListener('submit',async e=>{e.preventDefault();const btn=form.querySelector('button[type=submit]');btn.disabled=true;feedback.textContent='Uploading…';try{const response=await fetch('/api/medical-records',{method:'POST',body:new FormData(form)});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Upload failed.');form.reset();feedback.textContent='Document uploaded and saved on this local server.';await refresh();}catch(error){feedback.textContent=error.message;}finally{btn.disabled=false;}});
  refresh();
 }
+
+
+// Sign out of Supabase accounts; the demo workspace remains a separate sample flow.
+document.querySelector('.signout-button')?.addEventListener('click', async event => {
+  if (new URLSearchParams(location.search).get('mode') === 'demo') return;
+  event.preventDefault();
+  const link = event.currentTarget;
+  link.setAttribute('aria-disabled', 'true');
+  try {
+    if (window.supabaseClient) {
+      const { error } = await window.supabaseClient.auth.signOut();
+      if (error) throw error;
+    }
+    window.location.assign('/login.html');
+  } catch (error) {
+    link.removeAttribute('aria-disabled');
+    alert(error.message || 'Unable to sign out. Please try again.');
+  }
+});
