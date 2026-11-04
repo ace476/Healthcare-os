@@ -125,8 +125,7 @@
   });
 
   $('demoButton')?.addEventListener('click', () => {
-    clearNotice();
-    window.location.assign('/dashboard.html?mode=demo');
+    showNotice('Demo access is temporarily unavailable while we finish securing separate family workspaces. Please sign in or create an account to continue.');
   });
 
   $('forgotButton')?.addEventListener('click', async () => {
