@@ -160,7 +160,7 @@
   });
 
   const params = new URLSearchParams(window.location.search);
-  if (params.get('mode') === 'signup') setAuthMode('signup');
+  setAuthMode(params.get('mode') === 'signup' ? 'signup' : 'signin');
   if (params.get('mode') === 'recovery') {
     showNotice('Password recovery link opened. Password update will be available after the secure recovery screen is completed.', 'success');
   }
