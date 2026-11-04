@@ -13,7 +13,7 @@ function setupAccountMenu(me) {
   const host = document.querySelector('.topbar-right');
   if (!host) return;
   const display = me.name || me.email || 'My account';
-  const initials = display.trim().split(/\\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'U';
+  const initials = display.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'U';
   host.innerHTML =
     '<a class="top-dashboard-link' + (pageName === 'overview' ? ' is-active' : '') + '" href="/dashboard.html"><span aria-hidden="true">⌂</span> Dashboard</a>' +
     '<div class="account-menu-wrap">' +
