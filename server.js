@@ -179,14 +179,14 @@ app.get('/api/medical-records', asyncRoute(async(req,res)=>{
 app.post('/api/medical-records',(_req,res)=>res.status(501).json({error:'Private uploads are being connected to authenticated storage. Uploads are not enabled yet.'}));
 app.get('/api/medical-records/:id/download',(_req,res)=>res.status(501).json({error:'Secure document downloads are not enabled yet.'}));
 
-for (const [route, table, columns] of [
-  ['/api/health-metrics','health_metrics','id,family_id,family_member_id,metric_name,value_numeric,value_text,unit,measured_at'],
-  ['/api/emergency-info','emergency_info','id,family_id,family_member_id,blood_group,allergies,emergency_contact_name,emergency_contact_phone,conditions'],
-  ['/api/notifications','notifications','id,family_id,title,body,kind,read_at,created_at']
+for (const [route, table, columns, sortColumn] of [
+  ['/api/health-metrics','health_metrics','id,family_id,family_member_id,metric_name,value_numeric,value_text,unit,measured_at','created_at'],
+  ['/api/emergency-info','emergency_info','id,family_id,family_member_id,blood_group,allergies,emergency_contact_name,emergency_contact_phone,conditions','updated_at'],
+  ['/api/notifications','notifications','id,family_id,title,body,kind,read_at,created_at','created_at']
 ]) {
   app.get(route, asyncRoute(async(req,res)=>{
     const memberships=await ensureWorkspace(req.supabase,req.user),ids=memberships.map(m=>m.family_id);
-    const {data,error}=await req.supabase.from(table).select(columns).in('family_id',ids).order('created_at',{ascending:false}).limit(100);
+    const {data,error}=await req.supabase.from(table).select(columns).in('family_id',ids).order(sortColumn,{ascending:false}).limit(100);
     if(error) throw error;
     res.set('Cache-Control','private, no-store');
     res.json(data||[]);
