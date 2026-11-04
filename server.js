@@ -57,10 +57,13 @@ async function getFamilyIds(supabase, userId) {
 async function ensureWorkspace(supabase, user) {
   let memberships = await getFamilyIds(supabase, user.id);
   if (!memberships.length) {
-    const name = text(user.user_metadata?.full_name, 80) || (user.email ? user.email.split('@')[0] : 'My') + "'s family";
-    const { error } = await supabase.rpc('create_family_workspace', { p_name: name + (name.toLowerCase().endsWith('family') ? '' : ' Family') });
-    if (error) throw error;
+    const baseName = text(user.user_metadata?.full_name, 80) || (user.email ? user.email.split('@')[0] : 'My');
+    const name = baseName.toLowerCase().endsWith('family') ? baseName : baseName + ' Family';
+    const { error } = await supabase.from('families').insert({ name, created_by: user.id });
+    // Another request/tab may have created the workspace first. The trigger
+    // serializes owner creation; reuse that membership instead of duplicating it.
     memberships = await getFamilyIds(supabase, user.id);
+    if (error && !memberships.length) throw error;
   }
   return memberships;
 }
