@@ -94,9 +94,9 @@ function bindForm(id, endpoint, feedbackId) {
   });
 }
 async function boot() {
-  if (!client?.auth) { window.location.replace('/login.html'); return; }
-  const { data: { session } } = await client.auth.getSession();
-  if (!session) { window.location.replace('/login.html'); return; }
+  if (!client?.auth) { window.location.replace(loginRedirectUrl()); return; }
+  const { data: { session }, error: sessionError } = await client.auth.getSession();
+  if (sessionError || !session) { window.location.replace(loginRedirectUrl()); return; }
   const me = await api('/api/me');
   const display = me.name || me.email || 'My workspace';
   if ($('profileName')) $('profileName').textContent = display;
