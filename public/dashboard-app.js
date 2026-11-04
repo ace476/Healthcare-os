@@ -4,11 +4,16 @@ const pageName = document.body.dataset.page || '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const client = window.supabaseClient;
 
+function loginRedirectUrl() {
+  const next = window.location.pathname + window.location.search + window.location.hash;
+  return '/login.html?next=' + encodeURIComponent(next);
+}
+
 async function api(url, options = {}) {
   if (!client?.auth) throw new Error('Secure sign-in is unavailable. Refresh the page and try again.');
   const { data: { session } } = await client.auth.getSession();
   if (!session?.access_token) {
-    window.location.replace('/login.html');
+    window.location.replace(loginRedirectUrl());
     throw new Error('Please sign in to continue.');
   }
   const response = await fetch(url, {
