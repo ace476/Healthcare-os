@@ -146,7 +146,7 @@ app.post('/api/appointments', asyncRoute(async(req,res)=>{
   if(Number.isNaN(parsed.getTime())) return res.status(400).json({error:'Enter a valid appointment date and time.'});
   const {data,error}=await req.supabase.from('appointments').insert({family_id:writable.family_id,family_member_id:member.id,title:text(req.body.type,100)||'Consultation',clinician_name:doctor,starts_at:parsed.toISOString(),status:'scheduled'}).select('id,title,clinician_name,starts_at,status').single();
   if(error) throw error;
-  res.status(201).json({id:data.id,patient:member.display_name,doctor:data.clinician_name,date:data.starts_at.slice(0,10),time,time:data.starts_at,type:data.title,status:data.status});
+  res.status(201).json({id:data.id,patient:member.display_name,doctor:data.clinician_name,date:data.starts_at.slice(0,10),time,type:data.title,status:data.status});
 }));
 
 app.get('/api/medications', asyncRoute(async(req,res)=>{
