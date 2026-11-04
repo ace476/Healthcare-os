@@ -142,8 +142,15 @@ app.post('/api/appointments', asyncRoute(async(req,res)=>{
   const {data:member,error:memberError}=await req.supabase.from('family_members').select('id,display_name').eq('family_id',writable.family_id).ilike('display_name',patient).maybeSingle();
   if(memberError) throw memberError;
   if(!member) return res.status(400).json({error:'Choose a patient already listed in your family workspace.'});
-  const parsed=new Date(date+' '+time);
-  if(Number.isNaN(parsed.getTime())) return res.status(400).json({error:'Enter a valid appointment date and time.'});
+  const dateParts=date.split('-').map(Number);
+  const match=time.match(/^(\\d{1,2}):(\\d{2})\\s*(AM|PM)?$/i);
+  if(!match) return res.status(400).json({error:'Enter the time as HH:MM AM/PM or 24-hour HH:MM.'});
+  let hour=Number(match[1]); const minute=Number(match[2]); const meridiem=(match[3]||'').toUpperCase();
+  if(minute>59||hour>(meridiem?12:23)||hour<(meridiem?1:0)) return res.status(400).json({error:'Enter a valid appointment time.'});
+  if(meridiem) hour=(hour%12)+(meridiem==='PM'?12:0);
+  const [year,month,day]=dateParts;
+  const parsed=new Date(Date.UTC(year,month-1,day,hour,minute));
+  if(parsed.getUTCFullYear()!==year||parsed.getUTCMonth()!==month-1||parsed.getUTCDate()!==day) return res.status(400).json({error:'Enter a valid appointment date.'});
   const {data,error}=await req.supabase.from('appointments').insert({family_id:writable.family_id,family_member_id:member.id,title:text(req.body.type,100)||'Consultation',clinician_name:doctor,starts_at:parsed.toISOString(),status:'scheduled'}).select('id,title,clinician_name,starts_at,status').single();
   if(error) throw error;
   res.status(201).json({id:data.id,patient:member.display_name,doctor:data.clinician_name,date:data.starts_at.slice(0,10),time,type:data.title,status:data.status});
