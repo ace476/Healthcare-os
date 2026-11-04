@@ -81,7 +81,7 @@ app.get('/api/me', asyncRoute(async (req, res) => {
 }));
 
 app.get('/api/family', asyncRoute(async (req, res) => {
-  const memberships = await getFamilyIds(req.supabase, req.user.id);
+  const memberships = await ensureWorkspace(req.supabase, req.user);
   const ids = memberships.map(m => m.family_id);
   const [{ data: families, error: familyError }, { data: members, error: memberError }] = await Promise.all([
     req.supabase.from('families').select('id,name').in('id', ids),
@@ -121,7 +121,7 @@ app.post('/api/family-members', asyncRoute(async (req, res) => {
 }));
 
 app.get('/api/appointments', asyncRoute(async (req,res) => {
-  const memberships = await ensureWorkspace(req.supabase, req.user);
+  const memberships = await getFamilyIds(req.supabase, req.user.id);
   const ids = memberships.map(m=>m.family_id);
   const [{data:rows,error},{data:members, error:memberError}] = await Promise.all([
     req.supabase.from('appointments').select('id,family_id,family_member_id,title,clinician_name,starts_at,status,notes').in('family_id',ids).order('starts_at'),
@@ -169,7 +169,7 @@ app.get('/api/medications', asyncRoute(async(req,res)=>{
 }));
 
 app.get('/api/doctors', asyncRoute(async(req,res)=>{
-  const memberships=await ensureWorkspace(req.supabase,req.user),ids=memberships.map(m=>m.family_id);
+  const memberships=await getFamilyIds(req.supabase,req.user.id),ids=memberships.map(m=>m.family_id);
   const {data,error}=await req.supabase.from('care_team').select('id,family_id,name,specialty,organization,phone,email').in('family_id',ids).order('name');
   if(error) throw error;
   res.set('Cache-Control','private, no-store');
@@ -177,7 +177,7 @@ app.get('/api/doctors', asyncRoute(async(req,res)=>{
 }));
 
 app.get('/api/medical-records', asyncRoute(async(req,res)=>{
-  const memberships=await ensureWorkspace(req.supabase,req.user),ids=memberships.map(m=>m.family_id);
+  const memberships=await getFamilyIds(req.supabase,req.user.id),ids=memberships.map(m=>m.family_id);
   const {data,error}=await req.supabase.from('medical_records').select('id,family_id,family_member_id,title,category,document_date,original_filename,mime_type,byte_size,storage_path').in('family_id',ids).order('created_at',{ascending:false});
   if(error) throw error;
   res.set('Cache-Control','private, no-store');
@@ -192,7 +192,7 @@ for (const [route, table, columns, sortColumn] of [
   ['/api/notifications','notifications','id,family_id,title,body,kind,read_at,created_at','created_at']
 ]) {
   app.get(route, asyncRoute(async(req,res)=>{
-    const memberships=await ensureWorkspace(req.supabase,req.user),ids=memberships.map(m=>m.family_id);
+    const memberships=await getFamilyIds(req.supabase,req.user.id),ids=memberships.map(m=>m.family_id);
     const {data,error}=await req.supabase.from(table).select(columns).in('family_id',ids).order(sortColumn,{ascending:false}).limit(100);
     if(error) throw error;
     res.set('Cache-Control','private, no-store');
