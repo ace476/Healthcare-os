@@ -219,7 +219,7 @@ app.post('/api/appointments', asyncRoute(async(req,res)=>{
   if(memberError) throw memberError;
   if(!member) return res.status(400).json({error:'Choose a patient already listed in your family workspace.'});
   const dateParts=date.split('-').map(Number);
-  const match=time.match(/^(\\d{1,2}):(\\d{2})\\s*(AM|PM)?$/i);
+  const match=time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
   if(!match) return res.status(400).json({error:'Enter the time as HH:MM AM/PM or 24-hour HH:MM.'});
   let hour=Number(match[1]); const minute=Number(match[2]); const meridiem=(match[3]||'').toUpperCase();
   if(minute>59||hour>(meridiem?12:23)||hour<(meridiem?1:0)) return res.status(400).json({error:'Enter a valid appointment time.'});
