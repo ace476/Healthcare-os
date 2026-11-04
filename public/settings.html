@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0c615b" />
+  <title>Account settings · Healthcare OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="dashboard-page" data-page="settings">
+  <div class="app-shell"><div class="dashboard-layout">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand sidebar-brand" href="/dashboard.html" aria-label="Healthcare OS dashboard"><img class="brand-mark brand-logo-image" src="/brand-icon.svg" alt="" aria-hidden="true" /><span>healthcare<span>OS</span></span></a>
+      <div class="workspace-label">YOUR WORKSPACE</div>
+      <nav class="side-nav" aria-label="Main navigation">
+        <a class="nav-link" data-nav="overview" href="/dashboard.html"><span class="nav-icon">⌂</span> Dashboard</a>
+        <a class="nav-link" data-nav="family" href="/family.html"><span class="nav-icon">♧</span> Family members</a>
+        <a class="nav-link" data-nav="appointments" href="/appointments.html"><span class="nav-icon">▦</span> Appointments</a>
+        <a class="nav-link" data-nav="medications" href="/medications.html"><span class="nav-icon">✚</span> Medications</a>
+        <a class="nav-link" data-nav="doctors" href="/care-team.html"><span class="nav-icon">♡</span> Care team</a>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="help-card"><div class="help-spark">✦</div><strong>Care works better together.</strong><p>Keep the details that matter in one thoughtful place.</p></div>
+      <div class="profile-button"><span class="profile-avatar" id="profileInitials">H</span><span class="profile-meta"><strong id="profileName">My account</strong><small id="profileEmail">Loading account…</small></span></div>
+      <a class="signout-button" href="/login.html">↪ <span>Sign out</span></a>
+    </aside>
+    <main class="dashboard-main">
+      <header class="dashboard-topbar"><button class="mobile-menu" id="mobileMenu" aria-label="Open navigation">☰</button><div class="breadcrumb">Workspace <span>/</span> <strong>Account settings</strong></div><div class="topbar-right"></div></header>
+      <div class="dashboard-content">
+        <div class="welcome-row"><div><span class="eyebrow">YOUR ACCOUNT</span><h1>Account settings</h1><p>Review the account and sign-in details for this workspace.</p></div><a class="primary-action" href="/dashboard.html">⌂ <span>Back to dashboard</span></a></div>
+        <div class="settings-grid">
+          <section class="settings-card">
+            <span class="panel-kicker">PROFILE</span><h2>Account information</h2><p>Your signed-in account details. Profile editing is not enabled yet.</p>
+            <div class="settings-detail"><span class="settings-detail-avatar" id="settingsInitials">H</span><span class="settings-detail-copy"><strong id="settingsName">Loading…</strong><small id="settingsEmail">Loading account email…</small></span></div>
+          </section>
+          <section class="settings-card">
+            <span class="panel-kicker">SECURITY</span><h2>Sign-in session</h2><p id="sessionPreference">Checking your sign-in preference…</p>
+            <p class="settings-security-note">Your account is protected by Supabase authentication. Signing out ends this session and signs you out of other open tabs using the same persistent session.</p>
+            <div class="settings-actions"><a href="/login.html">Sign-in help</a><a href="/dashboard.html">Return to dashboard</a></div>
+          </section>
+        </div>
+        <footer class="dashboard-footer"><span>✳ Healthcare OS</span><span>A clearer view of everyday care.</span><span>Prototype · Not for clinical use</span></footer>
+      </div>
+    </main>
+  </div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script>
+  <script src="/supabase-config.js"></script>
+  <script src="/dashboard-app.js"></script>
+</body>
+</html>
