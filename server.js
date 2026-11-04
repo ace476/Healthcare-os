@@ -81,7 +81,7 @@ app.get('/api/me', asyncRoute(async (req, res) => {
 }));
 
 app.get('/api/family', asyncRoute(async (req, res) => {
-  const memberships = await ensureWorkspace(req.supabase, req.user);
+  const memberships = await getFamilyIds(req.supabase, req.user.id);
   const ids = memberships.map(m => m.family_id);
   const [{ data: families, error: familyError }, { data: members, error: memberError }] = await Promise.all([
     req.supabase.from('families').select('id,name').in('id', ids),
@@ -99,7 +99,7 @@ app.get('/api/family', asyncRoute(async (req, res) => {
 }));
 
 app.post('/api/family-members', asyncRoute(async (req, res) => {
-  const memberships = await ensureWorkspace(req.supabase, req.user);
+  const memberships = await getFamilyIds(req.supabase, req.user.id);
   const allowed = memberships.find(m => ['owner','admin','caregiver'].includes(m.role));
   if (!allowed) return res.status(403).json({ error: 'You do not have permission to add family members.' });
   const name = text(req.body.name, 100);
@@ -134,7 +134,7 @@ app.get('/api/appointments', asyncRoute(async (req,res) => {
 }));
 
 app.post('/api/appointments', asyncRoute(async(req,res)=>{
-  const memberships=await ensureWorkspace(req.supabase,req.user);
+  const memberships=await getFamilyIds(req.supabase,req.user.id);
   const writable=memberships.find(m=>['owner','admin','caregiver'].includes(m.role));
   if(!writable) return res.status(403).json({error:'You do not have permission to schedule appointments.'});
   const patient=text(req.body.patient,100), doctor=text(req.body.doctor,120), date=text(req.body.date,10), time=text(req.body.time,20);
@@ -157,7 +157,7 @@ app.post('/api/appointments', asyncRoute(async(req,res)=>{
 }));
 
 app.get('/api/medications', asyncRoute(async(req,res)=>{
-  const memberships=await ensureWorkspace(req.supabase,req.user), ids=memberships.map(m=>m.family_id);
+  const memberships=await getFamilyIds(req.supabase,req.user.id), ids=memberships.map(m=>m.family_id);
   const [{data:rows,error},{data:members,error:memberError}]=await Promise.all([
     req.supabase.from('medications').select('id,family_id,family_member_id,name,dosage,instructions,status').in('family_id',ids).order('created_at',{ascending:false}),
     req.supabase.from('family_members').select('id,display_name').in('family_id',ids)
