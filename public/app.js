@@ -247,17 +247,19 @@
   if (params.get('password') === 'updated') showNotice('Your password has been updated. Sign in with your new password.', 'success');
 
   // Keep signed-in users out of the login screen. Recovery links stay on this page.
-  if (supabase?.auth && !recoveryMode) {
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) throw error;
-      if (data?.session) continueAfterAuth();
-    }).catch(error => {
-      console.error('Healthcare OS could not restore the existing session:', error);
-    });
+  if (supabase?.auth) {
     supabase.auth.onAuthStateChange(event => {
       if (event === 'PASSWORD_RECOVERY' && recoveryMode) showRecoveryForm(true);
       else if (event === 'SIGNED_IN' && !recoveryMode) continueAfterAuth();
     });
+    if (!recoveryMode) {
+      supabase.auth.getSession().then(({ data, error }) => {
+        if (error) throw error;
+        if (data?.session) continueAfterAuth();
+      }).catch(error => {
+        console.error('Healthcare OS could not restore the existing session:', error);
+      });
+    }
   }
   if (!supabase?.auth) {
     console.error('Healthcare OS: Supabase client unavailable. Check the Supabase CDN and configuration scripts.');
