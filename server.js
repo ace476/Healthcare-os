@@ -1,204 +1,203 @@
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-const multer = require('multer');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://kkmuqehbjhanqckcjqzg.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable__jVrv1azwHk_ZLyeVD2ZLQ_hfEKqg8u';
 
-const familyMembers = [
-  {
-    id: 'F001',
-    name: 'Asha Patel',
-    role: 'Primary member',
-    age: 38,
-    memberId: 'MEM-1001',
-    familyCode: 'FAM-2048',
-    conditions: ['Hypothyroidism'],
-    medications: ['Levothyroxine'],
-    doctor: 'Dr. Mehta'
-  },
-  {
-    id: 'F002',
-    name: 'Rohit Patel',
-    role: 'Dependent',
-    age: 11,
-    memberId: 'MEM-1002',
-    familyCode: 'FAM-2048',
-    conditions: ['Asthma'],
-    medications: ['Inhaler'],
-    doctor: 'Dr. Sharma'
-  },
-  {
-    id: 'F003',
-    name: 'Mohan Patel',
-    role: 'Caregiver',
-    age: 67,
-    memberId: 'MEM-1003',
-    familyCode: 'FAM-2048',
-    conditions: ['Arthritis'],
-    medications: ['Ibuprofen'],
-    doctor: 'Dr. Nair'
+app.disable('x-powered-by');
+app.use(express.json({ limit: '256kb' }));
+app.use(express.static(require('path').join(__dirname, 'public')));
+
+function userClient(token) {
+  return createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { headers: { Authorization: 'Bearer ' + token } }
+  });
+}
+
+async function requireAuth(req, res, next) {
+  const header = req.get('authorization') || '';
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  if (!match) return res.status(401).json({ error: 'Please sign in to continue.' });
+  try {
+    const supabase = userClient(match[1]);
+    const { data, error } = await supabase.auth.getUser(match[1]);
+    if (error || !data?.user) return res.status(401).json({ error: 'Your session is invalid or expired. Please sign in again.' });
+    req.supabase = supabase;
+    req.user = data.user;
+    next();
+  } catch (error) {
+    console.error('Authentication verification failed:', error.message);
+    return res.status(401).json({ error: 'Unable to verify your session. Please sign in again.' });
   }
-];
+}
 
-const appointments = [
-  { id: 'A001', patient: 'Asha Patel', doctor: 'Dr. Mehta', date: '2026-11-02', time: '10:30 AM', type: 'Follow-up' },
-  { id: 'A002', patient: 'Rohit Patel', doctor: 'Dr. Sharma', date: '2026-11-04', time: '2:00 PM', type: 'Pediatric review' },
-  { id: 'A003', patient: 'Mohan Patel', doctor: 'Dr. Nair', date: '2026-11-06', time: '9:15 AM', type: 'General consultation' }
-];
-
-const medications = [
-  { name: 'Levothyroxine', dose: '50 mcg', schedule: 'Daily morning', member: 'Asha Patel' },
-  { name: 'Inhaler', dose: '1 puff', schedule: 'Twice daily', member: 'Rohit Patel' },
-  { name: 'Ibuprofen', dose: '200 mg', schedule: 'As needed', member: 'Mohan Patel' }
-];
-
-const doctors = [
-  { name: 'Dr. Mehta', specialty: 'Endocrinology', clinic: 'MediCare Clinic', available: 'Mon, Wed, Fri' },
-  { name: 'Dr. Sharma', specialty: 'Pediatrics', clinic: 'Sunrise Child Care', available: 'Tue, Thu' },
-  { name: 'Dr. Nair', specialty: 'Family Medicine', clinic: 'CareBridge Hospital', available: 'Mon-Fri' }
-];
-
-app.use(express.json({ limit: '1mb' }));
-const uploadDir = path.join(__dirname, 'data', 'uploads');
-const recordsFile = path.join(__dirname, 'data', 'medical-records.json');
-const hosted = Boolean(process.env.VERCEL);
-if (!hosted) fs.mkdirSync(uploadDir, { recursive: true });
-const readUploads = () => {
-  if (hosted) return [];
-  try { return JSON.parse(fs.readFileSync(recordsFile, 'utf8')); } catch { return []; }
+const asyncRoute = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+const fail = (res, error) => {
+  console.error('Healthcare OS database request failed:', error.message);
+  return res.status(400).json({ error: 'The request could not be completed. Please check your information and try again.' });
 };
-const writeUploads = rows => {
-  fs.mkdirSync(path.dirname(recordsFile), { recursive: true });
-  const tmp = recordsFile + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(rows, null, 2), { mode: 0o600 });
-  fs.renameSync(tmp, recordsFile);
+const text = (value, max = 160) => typeof value === 'string' ? value.trim().slice(0, max) : '';
+const dateAge = date => {
+  if (!date) return null;
+  const birth = new Date(date + 'T00:00:00Z');
+  if (Number.isNaN(birth.getTime())) return null;
+  const now = new Date();
+  let age = now.getUTCFullYear() - birth.getUTCFullYear();
+  if (now.getUTCMonth() < birth.getUTCMonth() || (now.getUTCMonth() === birth.getUTCMonth() && now.getUTCDate() < birth.getUTCDate())) age--;
+  return age;
 };
-const types = { 'application/pdf': '.pdf', 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
-const uploader = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, uploadDir),
-    filename: (_req, file, cb) => cb(null, crypto.randomUUID() + (types[file.mimetype] || ''))
-  }),
-  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
-  fileFilter: (_req, file, cb) => {
-    if (!types[file.mimetype] || path.extname(file.originalname).toLowerCase() !== types[file.mimetype]) {
-      return cb(new Error('Only matching PDF, JPG, PNG, or WEBP files are accepted.'));
-    }
-    cb(null, true);
+async function getFamilyIds(supabase, userId) {
+  const { data, error } = await supabase.from('family_memberships').select('family_id, role').eq('user_id', userId);
+  if (error) throw error;
+  return data || [];
+}
+async function ensureWorkspace(supabase, user) {
+  let memberships = await getFamilyIds(supabase, user.id);
+  if (!memberships.length) {
+    const name = text(user.user_metadata?.full_name, 80) || (user.email ? user.email.split('@')[0] : 'My') + "'s family";
+    const { error } = await supabase.rpc('create_family_workspace', { p_name: name + (name.toLowerCase().endsWith('family') ? '' : ' Family') });
+    if (error) throw error;
+    memberships = await getFamilyIds(supabase, user.id);
   }
-});
-app.use(express.static(path.join(__dirname, 'public')));
+  return memberships;
+}
 
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    app: 'Family Healthcare OS',
-    timestamp: new Date().toISOString()
+app.get('/api/health', (_req, res) => res.json({ status: 'ok', app: 'Healthcare OS', timestamp: new Date().toISOString() }));
+
+// Every application-data endpoint below requires a verified Supabase user token.
+// The same user token is forwarded to Postgres, so database RLS remains in force.
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health') return next();
+  return requireAuth(req, res, next);
+});
+
+app.get('/api/me', asyncRoute(async (req, res) => {
+  const { data: profile } = await req.supabase.from('profiles').select('full_name').eq('id', req.user.id).maybeSingle();
+  res.set('Cache-Control', 'private, no-store');
+  res.json({ id: req.user.id, email: req.user.email, name: profile?.full_name || req.user.user_metadata?.full_name || '' });
+}));
+
+app.get('/api/family', asyncRoute(async (req, res) => {
+  const memberships = await ensureWorkspace(req.supabase, req.user);
+  const ids = memberships.map(m => m.family_id);
+  const [{ data: families, error: familyError }, { data: members, error: memberError }] = await Promise.all([
+    req.supabase.from('families').select('id,name').in('id', ids),
+    req.supabase.from('family_members').select('id,family_id,display_name,date_of_birth,relationship,notes,created_at').in('family_id', ids).order('created_at')
+  ]);
+  if (familyError) throw familyError;
+  if (memberError) throw memberError;
+  const family = families?.[0];
+  const mapped = (members || []).map(m => {
+    const notes = m.notes || '';
+    return { id: m.id, name: m.display_name, role: m.relationship || 'Family member', age: dateAge(m.date_of_birth) ?? '', conditions: notes ? notes.split(';').filter(Boolean) : [], medications: [], doctor: '', familyId: m.family_id };
   });
+  res.set('Cache-Control', 'private, no-store');
+  res.json({ familyCode: family?.id || null, familyName: family?.name || null, families: families || [], members: mapped });
+}));
+
+app.post('/api/family-members', asyncRoute(async (req, res) => {
+  const memberships = await ensureWorkspace(req.supabase, req.user);
+  const allowed = memberships.find(m => ['owner','admin','caregiver'].includes(m.role));
+  if (!allowed) return res.status(403).json({ error: 'You do not have permission to add family members.' });
+  const name = text(req.body.name, 100);
+  if (name.length < 2) return res.status(400).json({ error: 'Enter a valid family member name.' });
+  const notes = [text(req.body.conditions, 300), text(req.body.medications, 300), text(req.body.doctor, 160) ? 'Doctor: ' + text(req.body.doctor,160) : ''].filter(Boolean).join('; ');
+  const age = Number(req.body.age);
+  let date_of_birth = null;
+  if (Number.isInteger(age) && age >= 0 && age <= 125) {
+    const d = new Date();
+    d.setUTCFullYear(d.getUTCFullYear() - age);
+    date_of_birth = d.toISOString().slice(0,10);
+  }
+  const { data, error } = await req.supabase.from('family_members').insert({
+    family_id: allowed.family_id, display_name: name, relationship: text(req.body.role,40) || 'Dependent',
+    date_of_birth, notes: notes || null
+  }).select('id,display_name,relationship,date_of_birth,notes').single();
+  if (error) throw error;
+  res.status(201).json({ id:data.id, name:data.display_name, role:data.relationship, age:dateAge(data.date_of_birth) ?? '', conditions: text(req.body.conditions,300).split(',').filter(Boolean), medications: text(req.body.medications,300).split(',').filter(Boolean), doctor:text(req.body.doctor,160) });
+}));
+
+app.get('/api/appointments', asyncRoute(async (req,res) => {
+  const memberships = await ensureWorkspace(req.supabase, req.user);
+  const ids = memberships.map(m=>m.family_id);
+  const [{data:rows,error},{data:members, error:memberError}] = await Promise.all([
+    req.supabase.from('appointments').select('id,family_id,family_member_id,title,clinician_name,starts_at,status,notes').in('family_id',ids).order('starts_at'),
+    req.supabase.from('family_members').select('id,display_name').in('family_id',ids)
+  ]);
+  if(error) throw error; if(memberError) throw memberError;
+  const byId = new Map((members||[]).map(m=>[m.id,m.display_name]));
+  res.set('Cache-Control','private, no-store');
+  res.json((rows||[]).map(a=>({id:a.id,patient:byId.get(a.family_member_id)||'Family member',doctor:a.clinician_name||'',date:a.starts_at.slice(0,10),time:new Date(a.starts_at).toLocaleTimeString('en',{hour:'numeric',minute:'2-digit',timeZone:'UTC'}),type:a.title,status:a.status})));
+}));
+
+app.post('/api/appointments', asyncRoute(async(req,res)=>{
+  const memberships=await ensureWorkspace(req.supabase,req.user);
+  const writable=memberships.find(m=>['owner','admin','caregiver'].includes(m.role));
+  if(!writable) return res.status(403).json({error:'You do not have permission to schedule appointments.'});
+  const patient=text(req.body.patient,100), doctor=text(req.body.doctor,120), date=text(req.body.date,10), time=text(req.body.time,20);
+  if(!patient||!doctor||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!time) return res.status(400).json({error:'Patient, doctor, date and time are required.'});
+  const {data:member,error:memberError}=await req.supabase.from('family_members').select('id,display_name').eq('family_id',writable.family_id).ilike('display_name',patient).maybeSingle();
+  if(memberError) throw memberError;
+  if(!member) return res.status(400).json({error:'Choose a patient already listed in your family workspace.'});
+  const parsed=new Date(date+' '+time);
+  if(Number.isNaN(parsed.getTime())) return res.status(400).json({error:'Enter a valid appointment date and time.'});
+  const {data,error}=await req.supabase.from('appointments').insert({family_id:writable.family_id,family_member_id:member.id,title:text(req.body.type,100)||'Consultation',clinician_name:doctor,starts_at:parsed.toISOString(),status:'scheduled'}).select('id,title,clinician_name,starts_at,status').single();
+  if(error) throw error;
+  res.status(201).json({id:data.id,patient:member.display_name,doctor:data.clinician_name,date:data.starts_at.slice(0,10),time,time:data.starts_at,type:data.title,status:data.status});
+}));
+
+app.get('/api/medications', asyncRoute(async(req,res)=>{
+  const memberships=await ensureWorkspace(req.supabase,req.user), ids=memberships.map(m=>m.family_id);
+  const [{data:rows,error},{data:members,error:memberError}]=await Promise.all([
+    req.supabase.from('medications').select('id,family_id,family_member_id,name,dosage,instructions,status').in('family_id',ids).order('created_at',{ascending:false}),
+    req.supabase.from('family_members').select('id,display_name').in('family_id',ids)
+  ]);
+  if(error) throw error;if(memberError) throw memberError;
+  const byId=new Map((members||[]).map(m=>[m.id,m.display_name]));
+  res.set('Cache-Control','private, no-store');
+  res.json((rows||[]).map(m=>({id:m.id,name:m.name,member:byId.get(m.family_member_id)||'Family member',dose:m.dosage||'',schedule:m.instructions||'',status:m.status})));
+}));
+
+app.get('/api/doctors', asyncRoute(async(req,res)=>{
+  const memberships=await ensureWorkspace(req.supabase,req.user),ids=memberships.map(m=>m.family_id);
+  const {data,error}=await req.supabase.from('care_team').select('id,family_id,name,specialty,organization,phone,email').in('family_id',ids).order('name');
+  if(error) throw error;
+  res.set('Cache-Control','private, no-store');
+  res.json((data||[]).map(d=>({id:d.id,name:d.name,specialty:d.specialty||'',clinic:d.organization||'',available:d.phone||d.email||''})));
+}));
+
+app.get('/api/medical-records', asyncRoute(async(req,res)=>{
+  const memberships=await ensureWorkspace(req.supabase,req.user),ids=memberships.map(m=>m.family_id);
+  const {data,error}=await req.supabase.from('medical_records').select('id,family_id,family_member_id,title,category,document_date,original_filename,mime_type,byte_size,storage_path').in('family_id',ids).order('created_at',{ascending:false});
+  if(error) throw error;
+  res.set('Cache-Control','private, no-store');
+  res.json((data||[]).map(r=>({id:r.id,title:r.title,category:r.category,member:'Family member',date:r.document_date||'',originalName:r.original_filename,mimeType:r.mime_type,size:r.byte_size,source:'stored'})));
+}));
+app.post('/api/medical-records',(_req,res)=>res.status(501).json({error:'Private uploads are being connected to authenticated storage. Uploads are not enabled yet.'}));
+app.get('/api/medical-records/:id/download',(_req,res)=>res.status(501).json({error:'Secure document downloads are not enabled yet.'}));
+
+for (const [route, table, columns] of [
+  ['/api/health-metrics','health_metrics','id,family_id,family_member_id,metric_name,value_numeric,value_text,unit,measured_at'],
+  ['/api/emergency-info','emergency_info','id,family_id,family_member_id,blood_group,allergies,emergency_contact_name,emergency_contact_phone,conditions'],
+  ['/api/notifications','notifications','id,family_id,title,body,kind,read_at,created_at']
+]) {
+  app.get(route, asyncRoute(async(req,res)=>{
+    const memberships=await ensureWorkspace(req.supabase,req.user),ids=memberships.map(m=>m.family_id);
+    const {data,error}=await req.supabase.from(table).select(columns).in('family_id',ids).order('created_at',{ascending:false}).limit(100);
+    if(error) throw error;
+    res.set('Cache-Control','private, no-store');
+    res.json(data||[]);
+  }));
+}
+
+app.get('*',(req,res)=>res.sendFile(require('path').join(__dirname,'public','index.html')));
+app.use((err,req,res,_next)=>{
+  console.error('Healthcare OS request error:',err.message);
+  if(res.headersSent) return;
+  if(err.code==='PGRST301'||err.status===401) return res.status(401).json({error:'Please sign in again.'});
+  res.status(400).json({error:'The server could not complete this request.'});
 });
-
-app.get('/api/family', (req, res) => {
-  res.json({
-    familyCode: 'FAM-2048',
-    members: familyMembers
-  });
-});
-
-app.get('/api/appointments', (req, res) => {
-  res.json(appointments);
-});
-
-app.get('/api/medications', (req, res) => {
-  res.json(medications);
-});
-
-const medicalRecords=[{title:'Complete blood count',category:'Lab report',member:'Asha Patel',date:'2026-10-18',clinic:'MediCare Clinic'},{title:'Prescription summary',category:'Prescription',member:'Rohit Patel',date:'2026-10-22',clinic:'Sunrise Child Care'},{title:'Discharge summary',category:'Clinical summary',member:'Mohan Patel',date:'2026-09-30',clinic:'CareBridge Hospital'}];
-const healthMetrics=[{metric:'Blood pressure',value:'118/76',unit:'mmHg',member:'Asha Patel',date:'2026-11-01'},{metric:'Weight',value:'62',unit:'kg',member:'Asha Patel',date:'2026-10-28'},{metric:'Blood glucose',value:'96',unit:'mg/dL',member:'Mohan Patel',date:'2026-10-27'}];
-const emergencyInfo=[{member:'Asha Patel',bloodGroup:'B+',allergies:'Not provided',contact:'Family contact (sample)',phone:'Not provided',conditions:'Hypothyroidism'},{member:'Rohit Patel',bloodGroup:'Not provided',allergies:'Not provided',contact:'Asha Patel (sample)',phone:'Not provided',conditions:'Asthma'},{member:'Mohan Patel',bloodGroup:'Not provided',allergies:'Not provided',contact:'Family contact (sample)',phone:'Not provided',conditions:'Arthritis'}];
-const notifications=[{title:'Appointment reminder',detail:'Rohit Patel · Pediatric review',date:'2026-11-04',kind:'Appointment',status:'Upcoming'},{title:'Follow-up to plan',detail:'Mohan Patel · General consultation',date:'2026-11-06',kind:'Care task',status:'To review'},{title:'Review medication list',detail:'Check the sample medication list',date:'2026-11-01',kind:'Reminder',status:'To review'}];
-app.get('/api/medical-records', (req, res) => res.json([...readUploads(), ...medicalRecords]));
-app.post('/api/medical-records', (req, res, next) => {
-  if (hosted) return res.status(503).json({ error: 'Uploads are disabled on the hosted demo until private persistent storage and user access controls are configured.' });
-  uploader.single('file')(req, res, err => {
-    if (err) return next(err);
-    if (!req.file) return res.status(400).json({ error: 'Choose a document to upload.' });
-    const { title, category, member, date } = req.body;
-    if (!title || !member || !date) {
-      fs.unlinkSync(req.file.path);
-      return res.status(400).json({ error: 'Title, family member, and document date are required.' });
-    }
-    const record = {
-      id: crypto.randomUUID(), title: String(title).trim().slice(0, 120),
-      category: String(category || 'Other').slice(0, 40), member: String(member).trim().slice(0, 100),
-      date, filename: path.basename(req.file.filename), originalName: path.basename(req.file.originalname).slice(0, 180),
-      mimeType: req.file.mimetype, size: req.file.size, uploadedAt: new Date().toISOString(), source: 'uploaded'
-    };
-    try { const rows = readUploads(); rows.unshift(record); writeUploads(rows); res.status(201).json(record); }
-    catch (e) { fs.unlinkSync(req.file.path); next(e); }
-  });
-});
-app.get('/api/medical-records/:id/download', (req, res) => {
-  const row = readUploads().find(item => item.id === req.params.id);
-  if (!row) return res.status(404).json({ error: 'Document not found.' });
-  const file = path.join(uploadDir, path.basename(row.filename));
-  if (!fs.existsSync(file)) return res.status(404).json({ error: 'Stored file is missing.' });
-  res.download(file, row.originalName);
-});
-app.get('/api/health-metrics',(req,res)=>res.json(healthMetrics));
-app.get('/api/emergency-info',(req,res)=>res.json(emergencyInfo));
-app.get('/api/notifications',(req,res)=>res.json(notifications));
-
-app.get('/api/doctors', (req, res) => {
-  res.json(doctors);
-});
-
-app.post('/api/family-members', (req, res) => {
-  const { name, role, age, memberId, conditions, medications: memberMeds, doctor } = req.body;
-
-  const newMember = {
-    id: `F${String(familyMembers.length + 1).padStart(3, '0')}`,
-    name,
-    role: role || 'Dependent',
-    age: Number(age) || 0,
-    memberId: memberId || `MEM-${Date.now()}`,
-    familyCode: 'FAM-2048',
-    conditions: conditions ? conditions.split(',').map((item) => item.trim()).filter(Boolean) : [],
-    medications: memberMeds ? memberMeds.split(',').map((item) => item.trim()).filter(Boolean) : [],
-    doctor: doctor || 'TBD'
-  };
-
-  familyMembers.push(newMember);
-  res.status(201).json(newMember);
-});
-
-app.post('/api/appointments', (req, res) => {
-  const { patient, doctor, date, time, type } = req.body;
-
-  const newAppointment = {
-    id: `A${String(appointments.length + 1).padStart(3, '0')}`,
-    patient,
-    doctor,
-    date,
-    time,
-    type: type || 'Consultation'
-  };
-
-  appointments.push(newAppointment);
-  res.status(201).json(newAppointment);
-});
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'File must be 10 MB or smaller.' : err.message });
-  if (err) return res.status(400).json({ error: err.message || 'Request failed.' });
-  next();
-});
-app.listen(PORT, () => {
-  console.log(`Healthcare OS app running at http://localhost:${PORT}`);
-});
+app.listen(PORT,()=>console.log('Healthcare OS server running on port '+PORT));
