@@ -119,3 +119,5 @@
 .tracking-kpi strong{color:#176d60;font:800 24px Manrope,sans-serif}
 .tracking-kpi span{color:#7c8d82;font-size:10px}
 @media(max-width:680px){.tracking-grid{grid-template-columns:1fr}.tracking-form{grid-template-columns:1fr}.tracking-form .form-wide{grid-column:auto}}
+
+.tracking-form [hidden]{display:none!important}
