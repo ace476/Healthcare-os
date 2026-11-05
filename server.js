@@ -205,6 +205,11 @@ app.post('/api/family-members', asyncRoute(async (req, res) => {
 }));
 
 const APPOINTMENT_TIME_ZONE = 'Asia/Kolkata';
+function parseLocalIST(value) {
+  if (typeof value !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/.test(value)) return null;
+  const parsed = new Date(value + ':00+05:30');
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
 function appointmentLocalParts(value) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: APPOINTMENT_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit',
@@ -366,7 +371,7 @@ app.post('/api/health-metrics', asyncRoute(async(req,res)=>{
   if(!member) return res.status(400).json({error:'Choose a member in your family workspace.'});
   const writable=memberships.find(m=>m.family_id===member.family_id && ['owner','admin','caregiver'].includes(m.role));
   if(!writable) return res.status(403).json({error:'You do not have permission to record measurements for this member.'});
-  const measuredAt=req.body.measured_at?new Date(req.body.measured_at):new Date();
+  const measuredAt=req.body.measured_at?parseLocalIST(req.body.measured_at):new Date();
   if(Number.isNaN(measuredAt.getTime())||measuredAt.getTime()>Date.now()+5*60*1000) return res.status(400).json({error:'Enter a valid measurement date and time.'});
   const isPressure=metric==='blood_pressure';
   const raw=isPressure?text(req.body.value_text,40):req.body.value_numeric;
@@ -405,7 +410,7 @@ app.post('/api/medication-dose-logs',asyncRoute(async(req,res)=>{
   const memberships=await getFamilyIds(req.supabase,req.user.id);
   const medicationId=text(req.body.medication_id,80);
   const status=text(req.body.status,16);
-  const scheduledFor=req.body.scheduled_for?new Date(req.body.scheduled_for):null;
+  const scheduledFor=req.body.scheduled_for?parseLocalIST(req.body.scheduled_for):null;
   if(!medicationId||!['taken','missed','skipped'].includes(status)||!scheduledFor||Number.isNaN(scheduledFor.getTime())||scheduledFor.getTime()>Date.now()+5*60*1000){
     return res.status(400).json({error:'Choose a medication, a valid scheduled time, and a dose status.'});
   }
@@ -447,8 +452,20 @@ app.get('/api/health-timeline',asyncRoute(async(req,res)=>{
   res.json(events.slice(0,150));
 }));
 
+
+app.get('/api/health-metrics',asyncRoute(async(req,res)=>{
+  const memberships=await getFamilyIds(req.supabase,req.user.id),ids=memberships.map(m=>m.family_id);
+  const [{data:rows,error},{data:members,error:memberError}]=await Promise.all([
+    req.supabase.from('health_metrics').select('id,family_id,family_member_id,metric_name,value_numeric,value_text,unit,measured_at,notes,created_by').in('family_id',ids).order('measured_at',{ascending:false}).limit(100),
+    req.supabase.from('family_members').select('id,display_name').in('family_id',ids)
+  ]);
+  if(error) throw error;if(memberError) throw memberError;
+  const names=new Map((members||[]).map(m=>[m.id,m.display_name]));
+  res.set('Cache-Control','private, no-store');
+  res.json((rows||[]).map(row=>({...row,member_name:names.get(row.family_member_id)||'Family member'})));
+}));
+
 for (const [route, table, columns, sortColumn] of [
-  ['/api/health-metrics','health_metrics','id,family_id,family_member_id,metric_name,value_numeric,value_text,unit,measured_at','created_at'],
   ['/api/emergency-info','emergency_info','id,family_id,family_member_id,blood_group,allergies,emergency_contact_name,emergency_contact_phone,conditions','updated_at'],
   ['/api/notifications','notifications','id,family_id,title,body,kind,read_at,created_at','created_at']
 ]) {
