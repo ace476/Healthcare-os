@@ -7,6 +7,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'https://kkmuqehbjhanqckcjqzg.s
 const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable__jVrv1azwHk_ZLyeVD2ZLQ_hfEKqg8u';
 
 app.disable('x-powered-by');
+// Vercel terminates the public connection before forwarding requests to Express.
+// Trust one proxy hop so req.ip resolves to the client address for abuse controls.
+app.set('trust proxy', 1);
 
 // Baseline browser security headers. Content Security Policy is intentionally
 // not set here yet because the current pages load Supabase and UI assets from
@@ -122,7 +125,7 @@ async function isCompromisedPassword(password) {
 // Signup is deliberately public, but password screening happens on the server
 // before the password is sent to Supabase Auth.
 app.post('/api/auth/signup', asyncRoute(async (req, res) => {
-  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').toString().split(',')[0].trim();
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
   if (!allowSignupAttempt(ip)) return res.status(429).json({ error: 'Too many sign-up attempts. Please wait 15 minutes and try again.' });
 
   const name = text(req.body?.full_name, 80);
