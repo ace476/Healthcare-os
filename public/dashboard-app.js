@@ -102,7 +102,7 @@ function appointmentCard(item) {
   const day = Number.isNaN(date.getTime()) ? '--' : String(date.getUTCDate()).padStart(2,'0');
   const month = Number.isNaN(date.getTime()) ? '---' : date.toLocaleDateString('en',{month:'short',timeZone:'UTC'}).toUpperCase();
   const cancel = item.status === 'scheduled' ? '<button class="secondary-action appointment-cancel" type="button" data-appointment-cancel="' + esc(item.id) + '">Cancel</button>' : '';
-  return '<div class="record-item"><div class="date-chip"><strong>' + day + '</strong><span>' + month + '</span></div><div class="record-body"><strong>' + esc(item.patient) + '</strong><span>' + esc(item.type) + ' · ' + esc(item.time) + ' IST</span><small>' + esc(item.doctor) + ' · ' + esc(item.date) + '</small></div><span class="med-status">' + esc(item.status || 'scheduled') + '</span>' + cancel + '</div>';
+  return '<div class="record-item" data-appointment-status="' + esc(item.status || 'scheduled') + '"><div class="date-chip"><strong>' + day + '</strong><span>' + month + '</span></div><div class="record-body"><strong>' + esc(item.patient) + '</strong><span>' + esc(item.type) + ' · ' + esc(item.time) + ' IST</span><small>' + esc(item.doctor) + ' · ' + esc(item.date) + '</small></div><span class="med-status">' + esc(item.status || 'scheduled') + '</span>' + cancel + '</div>';
 }
 function medicationCard(item) {
   return '<div class="record-item" data-medication-status="' + esc(item.status || 'active') + '"><div class="record-avatar med-avatar">✚</div><div class="record-body"><strong>' + esc(item.name) + '</strong><span>' + esc(item.member) + '</span><small>' + esc(item.dose) + (item.schedule ? ' · ' + esc(item.schedule) : '') + '</small><small>' + (item.startDate ? 'From ' + esc(item.startDate) : '') + (item.endDate ? ' · Until ' + esc(item.endDate) : '') + '</small></div><span class="med-status">' + esc(item.status || 'active') + '</span></div>';
@@ -121,10 +121,23 @@ async function loadDashboard() {
   const [family, appointments, medications, doctors] = await Promise.all([
     api('/api/family'), api('/api/appointments'), api('/api/medications'), api('/api/doctors')
   ]);
+  const upcomingAppointments=appointments.filter(item=>item.status==='scheduled' && item.date>=new Date().toLocaleDateString('en-CA'));
+  const activeMedications=medications.filter(item=>item.status==='active');
   if ($('memberCount')) $('memberCount').textContent = family.members.length;
-  if ($('appointmentCount')) $('appointmentCount').textContent = appointments.length;
-  if ($('medicationCount')) $('medicationCount').textContent = medications.length;
+  if ($('appointmentCount')) $('appointmentCount').textContent = upcomingAppointments.length;
+  if ($('medicationCount')) $('medicationCount').textContent = activeMedications.length;
   if ($('doctorCount')) $('doctorCount').textContent = doctors.length;
+  if ($('nextAppointmentSpotlight')) {
+    const next=upcomingAppointments.slice().sort((a,b)=>(a.date+' '+a.time).localeCompare(b.date+' '+b.time))[0];
+    $('nextAppointmentSpotlight').innerHTML=next
+      ? '<div class="spotlight-date"><strong>'+esc(next.date)+'</strong><span>'+esc(next.time)+' IST</span></div><div class="spotlight-copy"><strong>'+esc(next.patient)+'</strong><span>'+esc(next.type)+' with '+esc(next.doctor)+'</span></div>'
+      : '<p class="empty-state">No upcoming appointments recorded. <a href="/appointments.html#new-appointment">Schedule a visit</a>.</p>';
+  }
+  if ($('activeMedicationSpotlight')) {
+    $('activeMedicationSpotlight').innerHTML=activeMedications.length
+      ? '<strong class="spotlight-number">'+activeMedications.length+'</strong><span class="spotlight-caption">active medication records</span><small>Review each record against the current clinician instructions.</small>'
+      : '<p class="empty-state">No active medications recorded. <a href="/medications.html#add-medication">Add a record</a>.</p>';
+  }
   if ($('navAppointmentCount')) $('navAppointmentCount').textContent = appointments.filter(item => item.status === 'scheduled').length;
   const patientSelect = $('appointmentPatient');
   if (patientSelect) {
@@ -206,9 +219,20 @@ async function boot() {
     });
     const doctorQuery=($('doctorSearch')?.value||'').toLowerCase();
     document.querySelectorAll('#doctorList .record-item').forEach(row=>{row.hidden=!row.textContent.toLowerCase().includes(doctorQuery);});
+    const familyQuery=($('familySearch')?.value||'').toLowerCase();
+    document.querySelectorAll('#familyList .record-item').forEach(row=>{row.hidden=!row.textContent.toLowerCase().includes(familyQuery);});
+    const appointmentQuery=($('appointmentSearch')?.value||'').toLowerCase();
+    const appointmentStatus=$('appointmentStatusFilter')?.value||'all';
+    document.querySelectorAll('#appointmentList .record-item').forEach(row=>{
+      const matchesText=row.textContent.toLowerCase().includes(appointmentQuery);
+      const matchesStatus=appointmentStatus==='all'||row.dataset.appointmentStatus===appointmentStatus;
+      row.hidden=!(matchesText&&matchesStatus);
+    });
   };
-  ['medicationSearch','medicationStatusFilter','doctorSearch'].forEach(id=>$(id)?.addEventListener('input',applyListFilters));
-  $('medicationStatusFilter')?.addEventListener('change',applyListFilters);
+  ['medicationSearch','medicationStatusFilter','doctorSearch','familySearch','appointmentSearch','appointmentStatusFilter'].forEach(id=>{
+    $(id)?.addEventListener('input',applyListFilters);
+    $(id)?.addEventListener('change',applyListFilters);
+  });
   $('appointmentDate')?.setAttribute('min', new Date().toLocaleDateString('en-CA'));
   $('appointmentList')?.addEventListener('click', async event => {
     const button = event.target.closest('[data-appointment-cancel]');
