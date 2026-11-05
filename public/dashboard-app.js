@@ -259,6 +259,50 @@ async function boot() {
     if ($('sessionPreference')) $('sessionPreference').textContent = rememberSession
       ? 'Keep me signed in is enabled on this device.'
       : 'This browser is using tab-only sign-in storage.';
+
+  } else if (pageName === 'tracking') {
+    document.title = 'Health tracking · Healthcare OS';
+    const [family,metrics,doses,medications,timeline]=await Promise.all([
+      api('/api/family'),api('/api/health-metrics'),api('/api/medication-dose-logs'),api('/api/medications'),api('/api/health-timeline')
+    ]);
+    const memberSelect=$('metricPatient');
+    if(memberSelect) memberSelect.innerHTML='<option value="">Choose family member</option>'+family.members.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+'</option>').join('');
+    const medicationSelect=$('doseMedication');
+    const activeMeds=medications.filter(m=>m.status==='active'&&m.familyMemberId);
+    if(medicationSelect) medicationSelect.innerHTML='<option value="">Choose medication</option>'+activeMeds.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+' — '+esc(m.member)+'</option>').join('');
+    const memberFilter=$('timelineMemberFilter');
+    if(memberFilter) memberFilter.innerHTML='<option value="all">All family members</option>'+family.members.map(m=>'<option value="'+esc(m.name)+'">'+esc(m.name)+'</option>').join('');
+    const metricLabel=value=>({blood_pressure:'Blood pressure',heart_rate:'Heart rate',temperature:'Temperature',oxygen_saturation:'Oxygen saturation',weight:'Weight',blood_glucose:'Blood glucose'}[value]||value);
+    const metricValue=m=>m.value_text||[m.value_numeric,m.unit].filter(v=>v!==null&&v!==undefined&&v!=='').join(' ');
+    renderList('measurementList',metrics,(m)=>'<div class="record-item"><div class="record-avatar">⌁</div><div class="record-body"><strong>'+esc(metricLabel(m.metric_name))+'</strong><span>'+esc(metricValue(m))+'</span><small>'+esc(m.member_name||'Family member')+' · '+esc(new Date(m.measured_at).toLocaleString())+'</small></div></div>','No measurements recorded yet.');
+    renderList('doseLogList',doses,(d)=>'<div class="record-item"><div class="record-avatar med-avatar">✚</div><div class="record-body"><strong>'+esc(d.medication_name)+'</strong><span>'+esc(d.member_name)+' · '+esc(d.status)+'</span><small>'+esc(new Date(d.scheduled_for).toLocaleString())+'</small></div><span class="med-status">'+esc(d.status)+'</span></div>','No medication doses recorded yet.');
+    const drawTimeline=()=>{
+      const selected=memberFilter?.value||'all';
+      const filtered=timeline.filter(event=>selected==='all'||event.member===selected);
+      renderList('healthTimeline',filtered,event=>'<div class="record-item"><div class="record-avatar '+(event.type==='medication'?'med-avatar':'')+'">'+(event.type==='measurement'?'⌁':event.type==='medication'?'✚':'▦')+'</div><div class="record-body"><strong>'+esc(event.title)+'</strong><span>'+esc(event.member)+' · '+esc(event.detail)+'</span><small>'+esc(new Date(event.at).toLocaleString())+(event.note?' · '+esc(event.note):'')+'</small></div><span class="med-status">'+esc(event.type)+'</span></div>','No timeline events yet. Add a measurement or dose record to begin.');
+    };
+    memberFilter?.addEventListener('change',drawTimeline);
+    drawTimeline();
+    const metricForm=$('metricForm');
+    metricForm?.addEventListener('submit',async event=>{
+      event.preventDefault();const button=metricForm.querySelector('button[type="submit"]');const feedback=$('metricFeedback');button.disabled=true;feedback.textContent='Saving…';
+      try{await api('/api/health-metrics',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(metricForm).entries()))});metricForm.reset();feedback.textContent='Measurement saved.';await boot();}
+      catch(error){feedback.textContent=error.message;}finally{button.disabled=false;}
+    });
+    const doseForm=$('doseForm');
+    doseForm?.addEventListener('submit',async event=>{
+      event.preventDefault();const button=doseForm.querySelector('button[type="submit"]');const feedback=$('doseFeedback');button.disabled=true;feedback.textContent='Saving…';
+      try{await api('/api/medication-dose-logs',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(doseForm).entries()))});doseForm.reset();feedback.textContent='Dose record saved.';await boot();}
+      catch(error){feedback.textContent=error.message;}finally{button.disabled=false;}
+    });
+    $('metricType')?.addEventListener('change',()=>{
+      const pressure=$('metricType').value==='blood_pressure';
+      $('metricNumericWrap').hidden=pressure;$('metricPressureWrap').hidden=!pressure;
+    });
+    $('timelineSearch')?.addEventListener('input',()=>{
+      const query=$('timelineSearch').value.toLowerCase();
+      document.querySelectorAll('#healthTimeline .record-item').forEach(row=>{row.hidden=!row.textContent.toLowerCase().includes(query);});
+    });
   } else if (pageName === 'workspace') {
     const sectionName = new URLSearchParams(location.search).get('section');
     const config = {
