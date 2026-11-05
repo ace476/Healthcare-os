@@ -1,8 +1,23 @@
+# Dependencies and local tooling
 node_modules/
-.env
+.vercel/
 .DS_Store
+
+# Environment variables and credentials
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs and local database exports
+*.log
 npm-debug.log*
+*.dump
+*.backup
 
 # Local medical documents and metadata (never commit uploaded records)
-data/uploads/
-data/medical-records.json
+data/
