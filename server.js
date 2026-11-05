@@ -196,40 +196,81 @@ app.post('/api/family-members', asyncRoute(async (req, res) => {
   res.status(201).json({ id:data.id, name:data.display_name, role:data.relationship, age:dateAge(data.date_of_birth) ?? '', conditions: text(req.body.conditions,300).split(',').filter(Boolean), medications: text(req.body.medications,300).split(',').filter(Boolean), doctor:text(req.body.doctor,160) });
 }));
 
+const APPOINTMENT_TIME_ZONE = 'Asia/Kolkata';
+function appointmentLocalParts(value) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: APPOINTMENT_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date(value));
+  return Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+}
+function parseAppointmentStart(date, time) {
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || !/^\\d{2}:\\d{2}$/.test(time)) return null;
+  const [year, month, day] = date.split('-').map(Number);
+  const [hour, minute] = time.split(':').map(Number);
+  if (hour > 23 || minute > 59) return null;
+  const calendarCheck = new Date(Date.UTC(year, month - 1, day));
+  if (calendarCheck.getUTCFullYear() !== year || calendarCheck.getUTCMonth() !== month - 1 || calendarCheck.getUTCDate() !== day) return null;
+  // The appointment form uses Asia/Kolkata local time (UTC+05:30).
+  return new Date(Date.UTC(year, month - 1, day, hour, minute) - 330 * 60 * 1000);
+}
 app.get('/api/appointments', asyncRoute(async (req,res) => {
   const memberships = await getFamilyIds(req.supabase, req.user.id);
   const ids = memberships.map(m=>m.family_id);
   const [{data:rows,error},{data:members, error:memberError}] = await Promise.all([
-    req.supabase.from('appointments').select('id,family_id,family_member_id,title,clinician_name,starts_at,status,notes').in('family_id',ids).order('starts_at'),
+    req.supabase.from('appointments').select('id,family_id,family_member_id,title,clinician_name,clinic_name,starts_at,status,notes').in('family_id',ids).order('starts_at'),
     req.supabase.from('family_members').select('id,display_name').in('family_id',ids)
   ]);
   if(error) throw error; if(memberError) throw memberError;
   const byId = new Map((members||[]).map(m=>[m.id,m.display_name]));
   res.set('Cache-Control','private, no-store');
-  res.json((rows||[]).map(a=>({id:a.id,patient:byId.get(a.family_member_id)||'Family member',doctor:a.clinician_name||'',date:a.starts_at.slice(0,10),time:new Date(a.starts_at).toLocaleTimeString('en',{hour:'numeric',minute:'2-digit',timeZone:'UTC'}),type:a.title,status:a.status})));
+  res.json((rows||[]).map(a => {
+    const local = appointmentLocalParts(a.starts_at);
+    return {
+      id:a.id, patient:byId.get(a.family_member_id)||'Family member', doctor:a.clinician_name||'',
+      date:local.year+'-'+local.month+'-'+local.day, time:new Date(a.starts_at).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit',timeZone:APPOINTMENT_TIME_ZONE}),
+      type:a.title, status:a.status, clinic:a.clinic_name||''
+    };
+  }));
 }));
 
 app.post('/api/appointments', asyncRoute(async(req,res)=>{
   const memberships=await getFamilyIds(req.supabase,req.user.id);
   const writable=memberships.find(m=>['owner','admin','caregiver'].includes(m.role));
   if(!writable) return res.status(403).json({error:'You do not have permission to schedule appointments.'});
-  const patient=text(req.body.patient,100), doctor=text(req.body.doctor,120), date=text(req.body.date,10), time=text(req.body.time,20);
-  if(!patient||!doctor||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!time) return res.status(400).json({error:'Patient, doctor, date and time are required.'});
-  const {data:member,error:memberError}=await req.supabase.from('family_members').select('id,display_name').eq('family_id',writable.family_id).ilike('display_name',patient).maybeSingle();
+  const patientId=text(req.body.patient_id,80), doctor=text(req.body.doctor,120);
+  const date=text(req.body.date,10), time=text(req.body.time,5);
+  const startsAt=parseAppointmentStart(date,time);
+  if(!patientId||!doctor||!startsAt) return res.status(400).json({error:'Choose a family member and enter a valid date and time.'});
+  const {data:member,error:memberError}=await req.supabase.from('family_members').select('id,display_name').eq('id',patientId).eq('family_id',writable.family_id).maybeSingle();
   if(memberError) throw memberError;
-  if(!member) return res.status(400).json({error:'Choose a patient already listed in your family workspace.'});
-  const dateParts=date.split('-').map(Number);
-  const match=time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-  if(!match) return res.status(400).json({error:'Enter the time as HH:MM AM/PM or 24-hour HH:MM.'});
-  let hour=Number(match[1]); const minute=Number(match[2]); const meridiem=(match[3]||'').toUpperCase();
-  if(minute>59||hour>(meridiem?12:23)||hour<(meridiem?1:0)) return res.status(400).json({error:'Enter a valid appointment time.'});
-  if(meridiem) hour=(hour%12)+(meridiem==='PM'?12:0);
-  const [year,month,day]=dateParts;
-  const parsed=new Date(Date.UTC(year,month-1,day,hour,minute));
-  if(parsed.getUTCFullYear()!==year||parsed.getUTCMonth()!==month-1||parsed.getUTCDate()!==day) return res.status(400).json({error:'Enter a valid appointment date.'});
-  const {data,error}=await req.supabase.from('appointments').insert({family_id:writable.family_id,family_member_id:member.id,title:text(req.body.type,100)||'Consultation',clinician_name:doctor,starts_at:parsed.toISOString(),status:'scheduled'}).select('id,title,clinician_name,starts_at,status').single();
+  if(!member) return res.status(400).json({error:'Choose a patient from your family workspace.'});
+  if(startsAt.getTime() < Date.now() - 60 * 1000) return res.status(400).json({error:'Choose a future appointment date and time.'});
+  const {data,error}=await req.supabase.from('appointments').insert({
+    family_id:writable.family_id,family_member_id:member.id,title:text(req.body.type,100)||'Consultation',
+    clinician_name:doctor,clinic_name:text(req.body.clinic,160)||null,starts_at:startsAt.toISOString(),status:'scheduled'
+  }).select('id,title,clinician_name,starts_at,status').single();
   if(error) throw error;
-  res.status(201).json({id:data.id,patient:member.display_name,doctor:data.clinician_name,date:data.starts_at.slice(0,10),time,type:data.title,status:data.status});
+  const local=appointmentLocalParts(data.starts_at);
+  res.status(201).json({
+    id:data.id,patient:member.display_name,doctor:data.clinician_name,date:local.year+'-'+local.month+'-'+local.day,
+    time:new Date(data.starts_at).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit',timeZone:APPOINTMENT_TIME_ZONE}),
+    type:data.title,status:data.status
+  });
+}));
+
+app.patch('/api/appointments/:id/cancel', asyncRoute(async(req,res)=>{
+  const memberships=await getFamilyIds(req.supabase,req.user.id);
+  const writable=memberships.filter(m=>['owner','admin','caregiver'].includes(m.role));
+  if(!writable.length) return res.status(403).json({error:'You do not have permission to cancel appointments.'});
+  const ids=writable.map(m=>m.family_id);
+  const {data,error}=await req.supabase.from('appointments').update({status:'cancelled'})
+    .eq('id',req.params.id).in('family_id',ids).eq('status','scheduled')
+    .select('id,status').maybeSingle();
+  if(error) throw error;
+  if(!data) return res.status(404).json({error:'This scheduled appointment was not found or has already been updated.'});
+  res.set('Cache-Control','private, no-store');
+  res.json({id:data.id,status:data.status});
 }));
 
 app.get('/api/medications', asyncRoute(async(req,res)=>{
