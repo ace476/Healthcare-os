@@ -104,3 +104,18 @@
 .spotlight-copy{display:grid;gap:5px;min-width:0}.spotlight-copy strong{color:#315747;font-size:12px}.spotlight-copy span,.spotlight-caption{color:#72877b;font-size:10px}
 .spotlight-number{color:#176d60;font-size:28px;font-weight:800}.spotlight-content>small{color:#819188;font-size:9px;line-height:1.5}
 @media(max-width:720px){.dashboard-spotlight-grid{grid-template-columns:1fr}}
+
+
+/* Health tracking */
+.tracking-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.tracking-form label{display:grid;gap:7px;color:#597266;font-size:11px;font-weight:700}
+.tracking-form input,.tracking-form select,.tracking-form textarea{width:100%;min-height:40px;padding:10px 12px;border:1px solid #dce8df;border-radius:9px;color:#315747;background:#fff;font:inherit;font-size:11px}
+.tracking-form textarea{min-height:70px;resize:vertical}
+.tracking-form .form-wide{grid-column:1/-1}
+.tracking-form button{justify-self:start}
+.tracking-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.tracking-section{margin-top:16px}
+.tracking-kpi{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #e5eee6;border-radius:11px;background:#fbfdfb}
+.tracking-kpi strong{color:#176d60;font:800 24px Manrope,sans-serif}
+.tracking-kpi span{color:#7c8d82;font-size:10px}
+@media(max-width:680px){.tracking-grid{grid-template-columns:1fr}.tracking-form{grid-template-columns:1fr}.tracking-form .form-wide{grid-column:auto}}
