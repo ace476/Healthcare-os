@@ -222,8 +222,11 @@
     }
     if (!authReady()) return;
     try {
+      // Always send recovery links to the production app, even when the request
+      // was started from localhost during local development.
+      const recoveryRedirect = 'https://healthcare-os.vercel.app/login.html?mode=recovery';
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/login.html?mode=recovery'
+        redirectTo: recoveryRedirect
       });
       if (error) throw error;
       showNotice('If an account exists for this address, a password reset email has been sent.', 'success');
