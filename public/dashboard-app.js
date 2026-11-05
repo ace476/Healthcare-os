@@ -286,13 +286,13 @@ async function boot() {
     const metricForm=$('metricForm');
     metricForm?.addEventListener('submit',async event=>{
       event.preventDefault();const button=metricForm.querySelector('button[type="submit"]');const feedback=$('metricFeedback');button.disabled=true;feedback.textContent='Saving…';
-      try{await api('/api/health-metrics',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(metricForm).entries()))});metricForm.reset();feedback.textContent='Measurement saved.';await boot();}
+      try{await api('/api/health-metrics',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(metricForm).entries()))});metricForm.reset();feedback.textContent='Measurement saved.';window.location.reload();}
       catch(error){feedback.textContent=error.message;}finally{button.disabled=false;}
     });
     const doseForm=$('doseForm');
     doseForm?.addEventListener('submit',async event=>{
       event.preventDefault();const button=doseForm.querySelector('button[type="submit"]');const feedback=$('doseFeedback');button.disabled=true;feedback.textContent='Saving…';
-      try{await api('/api/medication-dose-logs',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(doseForm).entries()))});doseForm.reset();feedback.textContent='Dose record saved.';await boot();}
+      try{await api('/api/medication-dose-logs',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(doseForm).entries()))});doseForm.reset();feedback.textContent='Dose record saved.';window.location.reload();}
       catch(error){feedback.textContent=error.message;}finally{button.disabled=false;}
     });
     $('metricType')?.addEventListener('change',()=>{
