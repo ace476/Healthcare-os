@@ -105,10 +105,11 @@ function appointmentCard(item) {
   return '<div class="record-item"><div class="date-chip"><strong>' + day + '</strong><span>' + month + '</span></div><div class="record-body"><strong>' + esc(item.patient) + '</strong><span>' + esc(item.type) + ' · ' + esc(item.time) + ' IST</span><small>' + esc(item.doctor) + ' · ' + esc(item.date) + '</small></div><span class="med-status">' + esc(item.status || 'scheduled') + '</span>' + cancel + '</div>';
 }
 function medicationCard(item) {
-  return '<div class="record-item"><div class="record-avatar med-avatar">✚</div><div class="record-body"><strong>' + esc(item.name) + '</strong><span>' + esc(item.member) + '</span><small>' + esc(item.dose) + ' · ' + esc(item.schedule) + '</small></div><span class="med-status">' + esc(item.status || 'active') + '</span></div>';
+  return '<div class="record-item" data-medication-status="' + esc(item.status || 'active') + '"><div class="record-avatar med-avatar">✚</div><div class="record-body"><strong>' + esc(item.name) + '</strong><span>' + esc(item.member) + '</span><small>' + esc(item.dose) + (item.schedule ? ' · ' + esc(item.schedule) : '') + '</small><small>' + (item.startDate ? 'From ' + esc(item.startDate) : '') + (item.endDate ? ' · Until ' + esc(item.endDate) : '') + '</small></div><span class="med-status">' + esc(item.status || 'active') + '</span></div>';
 }
 function doctorCard(item) {
-  return '<div class="record-item"><div class="record-avatar doctor-avatar">♡</div><div class="record-body"><strong>' + esc(item.name) + '</strong><span>' + esc(item.specialty) + '</span><small>' + esc(item.clinic) + ' · ' + esc(item.available) + '</small></div></div>';
+  const contact = [item.phone,item.email].filter(Boolean).join(' · ');
+  return '<div class="record-item"><div class="record-avatar doctor-avatar">♡</div><div class="record-body"><strong>' + esc(item.name) + '</strong><span>' + esc(item.specialty || 'Healthcare professional') + '</span><small>' + esc(item.clinic) + (contact ? ' · ' + esc(contact) : '') + '</small><small>' + esc(item.notes || '') + '</small></div></div>';
 }
 function genericCard(item) {
   const title = item.title || item.metric_name || item.blood_group || item.kind || 'Record';
@@ -131,6 +132,15 @@ async function loadDashboard() {
     patientSelect.innerHTML = '<option value="">Select family member</option>' + family.members.map(member => '<option value="' + esc(member.id) + '">' + esc(member.name) + '</option>').join('');
     if (family.members.some(member => member.id === previous)) patientSelect.value = previous;
     if (!family.members.length) patientSelect.innerHTML = '<option value="">Add a family member first</option>';
+  }
+  for (const id of ['medicationPatient','doctorPatient']) {
+    const select=$(id);
+    if(!select) continue;
+    const previous=select.value;
+    const sharedOption=id==='doctorPatient'?'<option value="">Shared with family</option>':'<option value="">Select family member</option>';
+    select.innerHTML=sharedOption+family.members.map(member=>'<option value="'+esc(member.id)+'">'+esc(member.name)+'</option>').join('');
+    if(family.members.some(member=>member.id===previous)) select.value=previous;
+    if(id==='medicationPatient'&&!family.members.length) select.innerHTML='<option value="">Add a family member first</option>';
   }
   renderList('overviewAppointments', appointments.slice(0,3), appointmentCard);
   renderList('overviewFamily', family.members.slice(0,3), familyCard);
@@ -184,6 +194,21 @@ async function boot() {
   });
   bindForm('familyForm','/api/family-members','familyFeedback');
   bindForm('appointmentForm','/api/appointments','appointmentFeedback');
+  bindForm('medicationForm','/api/medications','medicationFeedback');
+  bindForm('doctorForm','/api/doctors','doctorFeedback');
+  const applyListFilters=()=>{
+    const medicationQuery=($('medicationSearch')?.value||'').toLowerCase();
+    const medicationStatus=$('medicationStatusFilter')?.value||'all';
+    document.querySelectorAll('#medicationList .record-item').forEach(row=>{
+      const matchesText=row.textContent.toLowerCase().includes(medicationQuery);
+      const matchesStatus=medicationStatus==='all'||row.dataset.medicationStatus===medicationStatus;
+      row.hidden=!(matchesText&&matchesStatus);
+    });
+    const doctorQuery=($('doctorSearch')?.value||'').toLowerCase();
+    document.querySelectorAll('#doctorList .record-item').forEach(row=>{row.hidden=!row.textContent.toLowerCase().includes(doctorQuery);});
+  };
+  ['medicationSearch','medicationStatusFilter','doctorSearch'].forEach(id=>$(id)?.addEventListener('input',applyListFilters));
+  $('medicationStatusFilter')?.addEventListener('change',applyListFilters);
   $('appointmentDate')?.setAttribute('min', new Date().toLocaleDateString('en-CA'));
   $('appointmentList')?.addEventListener('click', async event => {
     const button = event.target.closest('[data-appointment-cancel]');
