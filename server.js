@@ -7,6 +7,18 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'https://kkmuqehbjhanqckcjqzg.s
 const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable__jVrv1azwHk_ZLyeVD2ZLQ_hfEKqg8u';
 
 app.disable('x-powered-by');
+
+// Baseline browser security headers. Content Security Policy is intentionally
+// not set here yet because the current pages load Supabase and UI assets from
+// multiple external CDNs; deploy a tested CSP after consolidating those origins.
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
 app.use(express.json({ limit: '256kb' }));
 app.use(express.static(require('path').join(__dirname, 'public')));
 
