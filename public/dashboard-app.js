@@ -101,7 +101,8 @@ function appointmentCard(item) {
   const date = new Date(item.date + 'T12:00:00Z');
   const day = Number.isNaN(date.getTime()) ? '--' : String(date.getUTCDate()).padStart(2,'0');
   const month = Number.isNaN(date.getTime()) ? '---' : date.toLocaleDateString('en',{month:'short',timeZone:'UTC'}).toUpperCase();
-  return '<div class="record-item"><div class="date-chip"><strong>' + day + '</strong><span>' + month + '</span></div><div class="record-body"><strong>' + esc(item.patient) + '</strong><span>' + esc(item.type) + ' · ' + esc(item.time) + '</span><small>' + esc(item.doctor) + ' · ' + esc(item.date) + '</small></div><span class="med-status">' + esc(item.status || 'scheduled') + '</span></div>';
+  const cancel = item.status === 'scheduled' ? '<button class="secondary-action appointment-cancel" type="button" data-appointment-cancel="' + esc(item.id) + '">Cancel</button>' : '';
+  return '<div class="record-item"><div class="date-chip"><strong>' + day + '</strong><span>' + month + '</span></div><div class="record-body"><strong>' + esc(item.patient) + '</strong><span>' + esc(item.type) + ' · ' + esc(item.time) + ' IST</span><small>' + esc(item.doctor) + ' · ' + esc(item.date) + '</small></div><span class="med-status">' + esc(item.status || 'scheduled') + '</span>' + cancel + '</div>';
 }
 function medicationCard(item) {
   return '<div class="record-item"><div class="record-avatar med-avatar">✚</div><div class="record-body"><strong>' + esc(item.name) + '</strong><span>' + esc(item.member) + '</span><small>' + esc(item.dose) + ' · ' + esc(item.schedule) + '</small></div><span class="med-status">' + esc(item.status || 'active') + '</span></div>';
@@ -123,7 +124,14 @@ async function loadDashboard() {
   if ($('appointmentCount')) $('appointmentCount').textContent = appointments.length;
   if ($('medicationCount')) $('medicationCount').textContent = medications.length;
   if ($('doctorCount')) $('doctorCount').textContent = doctors.length;
-  if ($('navAppointmentCount')) $('navAppointmentCount').textContent = appointments.length;
+  if ($('navAppointmentCount')) $('navAppointmentCount').textContent = appointments.filter(item => item.status === 'scheduled').length;
+  const patientSelect = $('appointmentPatient');
+  if (patientSelect) {
+    const previous = patientSelect.value;
+    patientSelect.innerHTML = '<option value="">Select family member</option>' + family.members.map(member => '<option value="' + esc(member.id) + '">' + esc(member.name) + '</option>').join('');
+    if (family.members.some(member => member.id === previous)) patientSelect.value = previous;
+    if (!family.members.length) patientSelect.innerHTML = '<option value="">Add a family member first</option>';
+  }
   renderList('overviewAppointments', appointments.slice(0,3), appointmentCard);
   renderList('overviewFamily', family.members.slice(0,3), familyCard);
   renderList('overviewMedications', medications.slice(0,3), medicationCard);
@@ -176,6 +184,20 @@ async function boot() {
   });
   bindForm('familyForm','/api/family-members','familyFeedback');
   bindForm('appointmentForm','/api/appointments','appointmentFeedback');
+  $('appointmentDate')?.setAttribute('min', new Date().toLocaleDateString('en-CA'));
+  $('appointmentList')?.addEventListener('click', async event => {
+    const button = event.target.closest('[data-appointment-cancel]');
+    if (!button) return;
+    if (!window.confirm('Cancel this appointment?')) return;
+    button.disabled = true;
+    try {
+      await api('/api/appointments/' + encodeURIComponent(button.dataset.appointmentCancel) + '/cancel', { method:'PATCH' });
+      await loadDashboard();
+    } catch (error) {
+      window.alert(error.message);
+      button.disabled = false;
+    }
+  });
 
   if (pageName === 'settings') {
     document.title = 'Account settings · Healthcare OS';
