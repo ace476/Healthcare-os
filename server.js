@@ -236,15 +236,15 @@ app.get('/api/appointments', asyncRoute(async (req,res) => {
 
 app.post('/api/appointments', asyncRoute(async(req,res)=>{
   const memberships=await getFamilyIds(req.supabase,req.user.id);
-  const writable=memberships.find(m=>['owner','admin','caregiver'].includes(m.role));
-  if(!writable) return res.status(403).json({error:'You do not have permission to schedule appointments.'});
   const patientId=text(req.body.patient_id,80), doctor=text(req.body.doctor,120);
   const date=text(req.body.date,10), time=text(req.body.time,5);
   const startsAt=parseAppointmentStart(date,time);
   if(!patientId||!doctor||!startsAt) return res.status(400).json({error:'Choose a family member and enter a valid date and time.'});
-  const {data:member,error:memberError}=await req.supabase.from('family_members').select('id,display_name').eq('id',patientId).eq('family_id',writable.family_id).maybeSingle();
+  const {data:member,error:memberError}=await req.supabase.from('family_members').select('id,display_name,family_id').eq('id',patientId).maybeSingle();
   if(memberError) throw memberError;
   if(!member) return res.status(400).json({error:'Choose a patient from your family workspace.'});
+  const writable=memberships.find(m=>m.family_id===member.family_id && ['owner','admin','caregiver'].includes(m.role));
+  if(!writable) return res.status(403).json({error:'You do not have permission to schedule appointments for this family member.'});
   if(startsAt.getTime() < Date.now() - 60 * 1000) return res.status(400).json({error:'Choose a future appointment date and time.'});
   const {data,error}=await req.supabase.from('appointments').insert({
     family_id:writable.family_id,family_member_id:member.id,title:text(req.body.type,100)||'Consultation',
