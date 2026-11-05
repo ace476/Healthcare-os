@@ -180,20 +180,28 @@ app.post('/api/family-members', asyncRoute(async (req, res) => {
   if (!allowed) return res.status(403).json({ error: 'You do not have permission to add family members.' });
   const name = text(req.body.name, 100);
   if (name.length < 2) return res.status(400).json({ error: 'Enter a valid family member name.' });
-  const notes = [text(req.body.conditions, 300), text(req.body.medications, 300), text(req.body.doctor, 160) ? 'Doctor: ' + text(req.body.doctor,160) : ''].filter(Boolean).join('; ');
-  const age = Number(req.body.age);
+  const dob = text(req.body.date_of_birth, 10);
   let date_of_birth = null;
-  if (Number.isInteger(age) && age >= 0 && age <= 125) {
-    const d = new Date();
-    d.setUTCFullYear(d.getUTCFullYear() - age);
-    date_of_birth = d.toISOString().slice(0,10);
+  if (dob) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return res.status(400).json({ error: 'Enter a valid date of birth.' });
+    const parsed = new Date(dob + 'T00:00:00Z');
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0,10) !== dob || parsed > new Date()) return res.status(400).json({ error: 'Date of birth must be a valid date in the past.' });
+    date_of_birth = dob;
+  } else if (req.body.age !== undefined && req.body.age !== '') {
+    const age = Number(req.body.age);
+    if (!Number.isInteger(age) || age < 0 || age > 125) return res.status(400).json({ error: 'Enter a valid age.' });
+    const d = new Date(); d.setUTCFullYear(d.getUTCFullYear() - age); date_of_birth = d.toISOString().slice(0,10);
   }
+  const notes = text(req.body.notes, 1000) || [
+    text(req.body.conditions, 300), text(req.body.medications, 300),
+    text(req.body.doctor, 160) ? 'Doctor: ' + text(req.body.doctor,160) : ''
+  ].filter(Boolean).join('; ');
   const { data, error } = await req.supabase.from('family_members').insert({
     family_id: allowed.family_id, display_name: name, relationship: text(req.body.role,40) || 'Dependent',
     date_of_birth, notes: notes || null
   }).select('id,display_name,relationship,date_of_birth,notes').single();
   if (error) throw error;
-  res.status(201).json({ id:data.id, name:data.display_name, role:data.relationship, age:dateAge(data.date_of_birth) ?? '', conditions: text(req.body.conditions,300).split(',').filter(Boolean), medications: text(req.body.medications,300).split(',').filter(Boolean), doctor:text(req.body.doctor,160) });
+  res.status(201).json({ id:data.id, name:data.display_name, role:data.relationship, age:dateAge(data.date_of_birth) ?? '', conditions: notes ? [notes] : [] });
 }));
 
 const APPOINTMENT_TIME_ZONE = 'Asia/Kolkata';
@@ -248,7 +256,7 @@ app.post('/api/appointments', asyncRoute(async(req,res)=>{
   if(startsAt.getTime() < Date.now() - 60 * 1000) return res.status(400).json({error:'Choose a future appointment date and time.'});
   const {data,error}=await req.supabase.from('appointments').insert({
     family_id:writable.family_id,family_member_id:member.id,title:text(req.body.type,100)||'Consultation',
-    clinician_name:doctor,clinic_name:text(req.body.clinic,160)||null,starts_at:startsAt.toISOString(),status:'scheduled'
+    clinician_name:doctor,clinic_name:text(req.body.clinic,160)||null,starts_at:startsAt.toISOString(),status:'scheduled',created_by:req.user.id
   }).select('id,title,clinician_name,starts_at,status').single();
   if(error) throw error;
   const local=appointmentLocalParts(data.starts_at);
@@ -276,21 +284,64 @@ app.patch('/api/appointments/:id/cancel', asyncRoute(async(req,res)=>{
 app.get('/api/medications', asyncRoute(async(req,res)=>{
   const memberships=await getFamilyIds(req.supabase,req.user.id), ids=memberships.map(m=>m.family_id);
   const [{data:rows,error},{data:members,error:memberError}]=await Promise.all([
-    req.supabase.from('medications').select('id,family_id,family_member_id,name,dosage,instructions,status').in('family_id',ids).order('created_at',{ascending:false}),
+    req.supabase.from('medications').select('id,family_id,family_member_id,name,dosage,instructions,start_date,end_date,status').in('family_id',ids).order('created_at',{ascending:false}),
     req.supabase.from('family_members').select('id,display_name').in('family_id',ids)
   ]);
   if(error) throw error;if(memberError) throw memberError;
   const byId=new Map((members||[]).map(m=>[m.id,m.display_name]));
   res.set('Cache-Control','private, no-store');
-  res.json((rows||[]).map(m=>({id:m.id,name:m.name,member:byId.get(m.family_member_id)||'Family member',dose:m.dosage||'',schedule:m.instructions||'',status:m.status})));
+  res.json((rows||[]).map(m=>({id:m.id,name:m.name,member:byId.get(m.family_member_id)||'Family member',familyMemberId:m.family_member_id,dose:m.dosage||'',schedule:m.instructions||'',startDate:m.start_date||'',endDate:m.end_date||'',status:m.status})));
+}));
+
+app.post('/api/medications', asyncRoute(async(req,res)=>{
+  const memberships=await getFamilyIds(req.supabase,req.user.id);
+  const patientId=text(req.body.patient_id,80), name=text(req.body.name,160);
+  if(!patientId||name.length<2) return res.status(400).json({error:'Choose a family member and enter a medication name.'});
+  const {data:member,error:memberError}=await req.supabase.from('family_members').select('id,family_id').eq('id',patientId).maybeSingle();
+  if(memberError) throw memberError;
+  if(!member) return res.status(400).json({error:'Choose a member in your family workspace.'});
+  const writable=memberships.find(m=>m.family_id===member.family_id && ['owner','admin','caregiver'].includes(m.role));
+  if(!writable) return res.status(403).json({error:'You do not have permission to add medication for this member.'});
+  const start=text(req.body.start_date,10)||null, end=text(req.body.end_date,10)||null;
+  const validDate=value=>!value||(/^\d{4}-\d{2}-\d{2}$/.test(value)&&!Number.isNaN(new Date(value+'T00:00:00Z').getTime())&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value);
+  if(!validDate(start)||!validDate(end)||(start&&end&&end<start)) return res.status(400).json({error:'Check the medication start and end dates.'});
+  const {data,error}=await req.supabase.from('medications').insert({
+    family_id:writable.family_id,family_member_id:member.id,name,dosage:text(req.body.dosage,120)||null,
+    instructions:text(req.body.instructions,240)||null,start_date:start,end_date:end,status:'active',created_by:req.user.id
+  }).select('id,name,dosage,instructions,start_date,end_date,status').single();
+  if(error) throw error;
+  res.status(201).json({id:data.id,name:data.name,dose:data.dosage||'',schedule:data.instructions||'',startDate:data.start_date||'',endDate:data.end_date||'',status:data.status});
 }));
 
 app.get('/api/doctors', asyncRoute(async(req,res)=>{
   const memberships=await getFamilyIds(req.supabase,req.user.id),ids=memberships.map(m=>m.family_id);
-  const {data,error}=await req.supabase.from('care_team').select('id,family_id,name,specialty,organization,phone,email').in('family_id',ids).order('name');
+  const {data,error}=await req.supabase.from('care_team').select('id,family_id,family_member_id,name,specialty,organization,phone,email,notes').in('family_id',ids).order('name');
   if(error) throw error;
   res.set('Cache-Control','private, no-store');
-  res.json((data||[]).map(d=>({id:d.id,name:d.name,specialty:d.specialty||'',clinic:d.organization||'',available:d.phone||d.email||''})));
+  res.json((data||[]).map(d=>({id:d.id,name:d.name,specialty:d.specialty||'',clinic:d.organization||'',phone:d.phone||'',email:d.email||'',available:d.phone||d.email||'',familyMemberId:d.family_member_id,notes:d.notes||''})));
+}));
+
+app.post('/api/doctors', asyncRoute(async(req,res)=>{
+  const memberships=await getFamilyIds(req.supabase,req.user.id);
+  const name=text(req.body.name,160);
+  if(name.length<2) return res.status(400).json({error:'Enter the healthcare professional name.'});
+  const patientId=text(req.body.patient_id,80);
+  let familyId;
+  if(patientId){
+    const {data:member,error:memberError}=await req.supabase.from('family_members').select('id,family_id').eq('id',patientId).maybeSingle();
+    if(memberError) throw memberError;
+    if(!member) return res.status(400).json({error:'Choose a family member in your workspace.'});
+    familyId=member.family_id;
+  } else familyId=memberships.find(m=>['owner','admin','caregiver'].includes(m.role))?.family_id;
+  const writable=memberships.find(m=>m.family_id===familyId && ['owner','admin','caregiver'].includes(m.role));
+  if(!writable) return res.status(403).json({error:'You do not have permission to add care contacts for this family.'});
+  const {data,error}=await req.supabase.from('care_team').insert({
+    family_id:familyId,family_member_id:patientId||null,name,specialty:text(req.body.specialty,120)||null,
+    organization:text(req.body.organization,160)||null,phone:text(req.body.phone,40)||null,email:text(req.body.email,254)||null,
+    notes:text(req.body.notes,600)||null
+  }).select('id,name,specialty,organization,phone,email,family_member_id,notes').single();
+  if(error) throw error;
+  res.status(201).json({id:data.id,name:data.name,specialty:data.specialty||'',clinic:data.organization||'',phone:data.phone||'',email:data.email||'',available:data.phone||data.email||'',familyMemberId:data.family_member_id,notes:data.notes||''});
 }));
 
 app.get('/api/medical-records', asyncRoute(async(req,res)=>{
