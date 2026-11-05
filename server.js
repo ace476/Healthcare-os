@@ -205,7 +205,7 @@ function appointmentLocalParts(value) {
   return Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
 }
 function parseAppointmentStart(date, time) {
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || !/^\\d{2}:\\d{2}$/.test(time)) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return null;
   const [year, month, day] = date.split('-').map(Number);
   const [hour, minute] = time.split(':').map(Number);
   if (hour > 23 || minute > 59) return null;
