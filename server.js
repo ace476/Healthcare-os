@@ -354,6 +354,99 @@ app.get('/api/medical-records', asyncRoute(async(req,res)=>{
 app.post('/api/medical-records',(_req,res)=>res.status(501).json({error:'Private uploads are being connected to authenticated storage. Uploads are not enabled yet.'}));
 app.get('/api/medical-records/:id/download',(_req,res)=>res.status(501).json({error:'Secure document downloads are not enabled yet.'}));
 
+
+app.post('/api/health-metrics', asyncRoute(async(req,res)=>{
+  const memberships=await getFamilyIds(req.supabase,req.user.id);
+  const patientId=text(req.body.patient_id,80);
+  const metric=text(req.body.metric_name,40);
+  const allowedMetrics=new Set(['blood_pressure','heart_rate','temperature','oxygen_saturation','weight','blood_glucose']);
+  if(!patientId||!allowedMetrics.has(metric)) return res.status(400).json({error:'Choose a family member and a supported measurement type.'});
+  const {data:member,error:memberError}=await req.supabase.from('family_members').select('id,family_id').eq('id',patientId).maybeSingle();
+  if(memberError) throw memberError;
+  if(!member) return res.status(400).json({error:'Choose a member in your family workspace.'});
+  const writable=memberships.find(m=>m.family_id===member.family_id && ['owner','admin','caregiver'].includes(m.role));
+  if(!writable) return res.status(403).json({error:'You do not have permission to record measurements for this member.'});
+  const measuredAt=req.body.measured_at?new Date(req.body.measured_at):new Date();
+  if(Number.isNaN(measuredAt.getTime())||measuredAt.getTime()>Date.now()+5*60*1000) return res.status(400).json({error:'Enter a valid measurement date and time.'});
+  const isPressure=metric==='blood_pressure';
+  const raw=isPressure?text(req.body.value_text,40):req.body.value_numeric;
+  if(isPressure){
+    if(!/^\d{2,3}\s*\/\s*\d{2,3}$/.test(raw)) return res.status(400).json({error:'Enter blood pressure as systolic/diastolic, for example 120/80.'});
+  } else if(raw===''||raw===null||raw===undefined||!Number.isFinite(Number(raw))) {
+    return res.status(400).json({error:'Enter a numeric measurement.'});
+  }
+  const unit=text(req.body.unit,24);
+  const {data,error}=await req.supabase.from('health_metrics').insert({
+    family_id:writable.family_id,family_member_id:member.id,metric_name:metric,
+    value_numeric:isPressure?null:Number(raw),value_text:isPressure?raw:null,
+    unit:unit||null,measured_at:measuredAt.toISOString(),notes:text(req.body.notes,500)||null,
+    created_by:req.user.id
+  }).select('id,metric_name,value_numeric,value_text,unit,measured_at,notes').single();
+  if(error) throw error;
+  res.set('Cache-Control','private, no-store');
+  res.status(201).json(data);
+}));
+
+app.get('/api/medication-dose-logs',asyncRoute(async(req,res)=>{
+  const memberships=await getFamilyIds(req.supabase,req.user.id),ids=memberships.map(m=>m.family_id);
+  const [{data:logs,error},{data:medications,error:medError},{data:members,error:memberError}]=await Promise.all([
+    req.supabase.from('medication_dose_logs').select('id,family_id,family_member_id,medication_id,scheduled_for,status,taken_at,note,created_at,logged_by').in('family_id',ids).order('scheduled_for',{ascending:false}).limit(100),
+    req.supabase.from('medications').select('id,name').in('family_id',ids),
+    req.supabase.from('family_members').select('id,display_name').in('family_id',ids)
+  ]);
+  if(error) throw error;if(medError) throw medError;if(memberError) throw memberError;
+  const medMap=new Map((medications||[]).map(m=>[m.id,m.name]));
+  const memberMap=new Map((members||[]).map(m=>[m.id,m.display_name]));
+  res.set('Cache-Control','private, no-store');
+  res.json((logs||[]).map(log=>({...log,medication_name:medMap.get(log.medication_id)||'Medication',member_name:memberMap.get(log.family_member_id)||'Family member'})));
+}));
+
+app.post('/api/medication-dose-logs',asyncRoute(async(req,res)=>{
+  const memberships=await getFamilyIds(req.supabase,req.user.id);
+  const medicationId=text(req.body.medication_id,80);
+  const status=text(req.body.status,16);
+  const scheduledFor=req.body.scheduled_for?new Date(req.body.scheduled_for):null;
+  if(!medicationId||!['taken','missed','skipped'].includes(status)||!scheduledFor||Number.isNaN(scheduledFor.getTime())||scheduledFor.getTime()>Date.now()+5*60*1000){
+    return res.status(400).json({error:'Choose a medication, a valid scheduled time, and a dose status.'});
+  }
+  const {data:medication,error:medError}=await req.supabase.from('medications').select('id,family_id,family_member_id,name').eq('id',medicationId).maybeSingle();
+  if(medError) throw medError;
+  if(!medication||!medication.family_member_id) return res.status(400).json({error:'Choose a medication linked to a family member.'});
+  const writable=memberships.find(m=>m.family_id===medication.family_id&&['owner','admin','caregiver'].includes(m.role));
+  if(!writable) return res.status(403).json({error:'You do not have permission to record this medication dose.'});
+  const {data,error}=await req.supabase.from('medication_dose_logs').insert({
+    family_id:medication.family_id,family_member_id:medication.family_member_id,medication_id:medication.id,
+    scheduled_for:scheduledFor.toISOString(),status,taken_at:status==='taken'?new Date().toISOString():null,
+    note:text(req.body.note,500)||null,logged_by:req.user.id
+  }).select('id,medication_id,family_member_id,scheduled_for,status,taken_at,note,created_at').single();
+  if(error&&error.code==='23505') return res.status(409).json({error:'A dose record already exists for this medication and scheduled time.'});
+  if(error) throw error;
+  res.set('Cache-Control','private, no-store');
+  res.status(201).json({...data,medication_name:medication.name});
+}));
+
+app.get('/api/health-timeline',asyncRoute(async(req,res)=>{
+  const memberships=await getFamilyIds(req.supabase,req.user.id),ids=memberships.map(m=>m.family_id);
+  const [{data:metrics,error:metricError},{data:doses,error:doseError},{data:appointments,error:appointmentError},{data:members,error:memberError},{data:medications,error:medError}]=await Promise.all([
+    req.supabase.from('health_metrics').select('id,family_id,family_member_id,metric_name,value_numeric,value_text,unit,measured_at,notes,created_by').in('family_id',ids).order('measured_at',{ascending:false}).limit(100),
+    req.supabase.from('medication_dose_logs').select('id,family_id,family_member_id,medication_id,scheduled_for,status,taken_at,note,logged_by').in('family_id',ids).order('scheduled_for',{ascending:false}).limit(100),
+    req.supabase.from('appointments').select('id,family_id,family_member_id,title,clinician_name,starts_at,status').in('family_id',ids).order('starts_at',{ascending:false}).limit(100),
+    req.supabase.from('family_members').select('id,display_name').in('family_id',ids),
+    req.supabase.from('medications').select('id,name').in('family_id',ids)
+  ]);
+  if(metricError) throw metricError;if(doseError) throw doseError;if(appointmentError) throw appointmentError;if(memberError) throw memberError;if(medError) throw medError;
+  const memberMap=new Map((members||[]).map(m=>[m.id,m.display_name]));
+  const medMap=new Map((medications||[]).map(m=>[m.id,m.name]));
+  const events=[
+    ...(metrics||[]).map(m=>({id:'metric-'+m.id,type:'measurement',at:m.measured_at,member:memberMap.get(m.family_member_id)||'Family',title:m.metric_name.replace(/_/g,' '),detail:[m.value_text||m.value_numeric,m.unit].filter(v=>v!==null&&v!==undefined&&v!=='').join(' '),note:m.notes||''})),
+    ...(doses||[]).map(d=>({id:'dose-'+d.id,type:'medication',at:d.scheduled_for,member:memberMap.get(d.family_member_id)||'Family',title:medMap.get(d.medication_id)||'Medication',detail:'Dose '+d.status,note:d.note||''})),
+    ...(appointments||[]).map(a=>({id:'appointment-'+a.id,type:'appointment',at:a.starts_at,member:memberMap.get(a.family_member_id)||'Family',title:a.title,detail:[a.clinician_name,a.status].filter(Boolean).join(' · '),note:''}))
+  ];
+  events.sort((a,b)=>new Date(b.at)-new Date(a.at));
+  res.set('Cache-Control','private, no-store');
+  res.json(events.slice(0,150));
+}));
+
 for (const [route, table, columns, sortColumn] of [
   ['/api/health-metrics','health_metrics','id,family_id,family_member_id,metric_name,value_numeric,value_text,unit,measured_at','created_at'],
   ['/api/emergency-info','emergency_info','id,family_id,family_member_id,blood_group,allergies,emergency_contact_name,emergency_contact_phone,conditions','updated_at'],
