@@ -94,3 +94,13 @@
 .data-form input:focus,.data-form select:focus,.data-form textarea:focus,.list-toolbar input:focus,.list-toolbar select:focus{outline:2px solid #b9d9cb;outline-offset:1px}
 .record-item[hidden]{display:none}
 @media(max-width:640px){.list-toolbar{flex-direction:column}.list-toolbar select{flex-basis:auto;width:100%}.data-form .form-wide{grid-column:auto}}
+
+/* Dashboard care-at-a-glance cards */
+.dashboard-spotlight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:18px 0}
+.spotlight-panel{min-width:0}
+.spotlight-content{display:flex;align-items:center;gap:14px;min-height:68px}
+.spotlight-date{display:grid;gap:4px;min-width:92px;padding:10px 12px;border-radius:10px;color:#1b6b5c;background:#edf6f0}
+.spotlight-date strong{font-size:12px}.spotlight-date span{font-size:10px}
+.spotlight-copy{display:grid;gap:5px;min-width:0}.spotlight-copy strong{color:#315747;font-size:12px}.spotlight-copy span,.spotlight-caption{color:#72877b;font-size:10px}
+.spotlight-number{color:#176d60;font-size:28px;font-weight:800}.spotlight-content>small{color:#819188;font-size:9px;line-height:1.5}
+@media(max-width:720px){.dashboard-spotlight-grid{grid-template-columns:1fr}}
