@@ -1,66 +1,59 @@
-# Family Healthcare OS
+# Healthcare OS
 
-A responsive family-care coordination prototype with a sign-in screen, account creation, session-based authentication, and a family dashboard for sample appointments, medications, care-team contacts, and members.
+A family-care coordination prototype with Supabase authentication, a family dashboard, appointments, medications, care-team contacts, and health tracking.
 
 ## Run locally
 
-1. Install Node.js (18 or newer recommended).
+1. Install Node.js 18 or newer.
 2. Install dependencies:
    ```bash
    npm install
    ```
-3. Start the server:
+3. Start the Express server:
    ```bash
    npm start
    ```
 4. Open http://localhost:3000
 
-## Demo sign-in
+The current application connects to the configured Supabase project. The browser uses a Supabase **publishable** key, which is designed to be public; never put a Supabase service-role or secret key in browser code.
 
-Use **Explore the family dashboard** on the login screen, or use this sample account:
+## Authentication and data access
 
-- Email: `admin@demo.com`
-- Password: `admin123`
+- Supabase Auth handles sign-up, sign-in, and email-based password recovery.
+- Express verifies bearer tokens with Supabase Auth before serving protected API routes.
+- The authenticated user token is forwarded to Postgres so row-level security remains active.
+- Family data tables use RLS policies based on family membership and caregiver roles.
+- A private database audit log records metadata about inserts, updates, and deletes. It deliberately does not store health values or free-text medical details.
 
-The sample data is fictional. New accounts are created in server memory for this prototype.
+## Medical documents
 
-## What's included
-
-- Responsive sign-in and account creation screens
-- Server-side session cookie with HttpOnly and SameSite=Lax settings
-- Password hashing with Node.js scrypt
-- Protected healthcare API routes that require a signed-in session
-- Family overview, sample medication schedule, appointments, and care team
-- Forms for adding a sample family member and appointment
-- Mobile-friendly dashboard navigation
+The `medical-records` Supabase Storage bucket is private and has file-size and MIME-type restrictions. **Hosted upload and download endpoints are deliberately disabled** until the complete authorization, malware/content inspection, retention, and recovery workflow is implemented. Do not upload real patient information.
 
 ## Important security and product limitations
 
 **This is a prototype, not a production-ready healthcare service. Do not enter real patient data or use it for clinical decisions.**
 
-- User accounts, sample health records, and session data are held in memory and are lost when the server restarts. The sample family data is shared by all signed-in accounts.
-- The default session secret is only for local development. Set a long, random `SESSION_SECRET` in your environment before any hosted testing. Never commit secrets.
-- The default Express session MemoryStore is not suitable for production. Use a persistent, production-grade session store and database.
-- Before handling real health data, implement per-user/family authorization, secure account recovery, email verification, rate limiting, CSRF protections appropriate to the deployment, audit logging, backups, monitoring, and a privacy/security review. Configure HTTPS and secure cookies at the hosting layer.
-- Google/Apple sign-in and email-based password reset are visual placeholders and are not connected to identity providers or an email service.
+- The GitHub repository is public. Do not commit credentials, private keys, database passwords, patient records, or environment files.
+- Supabase leaked-password protection is currently disabled. The signup API performs a server-side compromised-password check, but that check is not enforced by Supabase Auth itself and is not applied to the password-recovery update flow.
+- Signup throttling currently uses an in-memory per-instance counter. This is not a reliable distributed rate limiter for serverless deployments. Configure a platform-level rate limit and verify Supabase Auth rate limits before production.
+- Browser sessions use browser storage. A production deployment should review session lifetime, MFA, XSS defenses, and recovery settings.
+- A baseline set of HTTP security headers is configured. A strict Content Security Policy has not yet been deployed because external CDN origins need to be consolidated and tested.
+- Audit events are stored in a private schema and are not exposed through the application UI. Monitoring and alerting still need a persistent operational workflow.
+- The Supabase organization is on the Free plan, which does not include automatic database backups. Manual off-site database exports and separate Storage-object backups are required; restore testing has not been performed.
+- The application has not undergone a formal penetration test, cross-family authorization test suite, clinical safety review, or privacy/compliance assessment.
+
+Use synthetic data only until these controls are completed and independently verified.
 
 ## Project structure
 
-- `server.js` — Express app, session authentication, and in-memory sample API
-- `public/index.html` — public landing page with top navigation and login button
-- `public/login.html` — separate sign-in, account creation, and dashboard experience
-- `public/app.js` — authentication flow and dashboard interactions
-- `public/styles.css` — responsive landing page, login, and dashboard styling
+- `server.js` — Express API, Supabase token verification, and protected routes
+- `public/` — landing page, sign-in, dashboard, and feature pages
+- `public/supabase-config.js` — browser Supabase URL and publishable key
+- `supabase/migrations/` — database schema and security migrations
 
 ## Tech stack
 
 - Node.js and Express
-- express-session
+- Supabase Auth and PostgreSQL with RLS
+- Supabase Storage (private bucket; application uploads are disabled)
 - Vanilla JavaScript, HTML, and CSS
-
-
-## Medical document uploads (local prototype)
-
-The Medical records workspace supports local uploads of PDF, JPG, PNG, and WEBP files up to 10 MB. Uploaded files are stored outside the public web directory in `data/uploads/`; document metadata is stored in `data/medical-records.json`. The download endpoint streams files without exposing the storage directory as a static asset.
-
-**Hosted uploads are deliberately disabled on Vercel.** Its function filesystem is ephemeral, and this project does not yet have a private persistent object store or per-user document authorization. Do not upload real patient information. Before enabling hosted uploads, connect private object storage, enforce authenticated family/tenant access for upload/list/download/delete, add malware/content inspection and audit logging, and verify retention and backup policies. Local uploads are for development and demonstration only.
