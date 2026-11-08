@@ -11,9 +11,8 @@ app.disable('x-powered-by');
 // Trust one proxy hop so req.ip resolves to the client address for abuse controls.
 app.set('trust proxy', 1);
 
-// Baseline browser security headers. Content Security Policy is intentionally
-// not set here yet because the current pages load Supabase and UI assets from
-// multiple external CDNs; deploy a tested CSP after consolidating those origins.
+// Browser security headers. The CSP allows only the app origin plus the
+// explicitly required Supabase, jsDelivr and Google Fonts origins.
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -190,6 +189,12 @@ app.post('/api/family-members', asyncRoute(async (req, res) => {
 const APPOINTMENT_TIME_ZONE = 'Asia/Kolkata';
 function parseLocalIST(value) {
   if (typeof value !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/.test(value)) return null;
+  const [datePart, timePart] = value.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute] = timePart.split(':').map(Number);
+  const calendarCheck = new Date(Date.UTC(year, month - 1, day));
+  if (calendarCheck.getUTCFullYear() !== year || calendarCheck.getUTCMonth() !== month - 1 ||
+      calendarCheck.getUTCDate() !== day || hour > 23 || minute > 59) return null;
   const parsed = new Date(value + ':00+05:30');
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
@@ -355,7 +360,7 @@ app.post('/api/health-metrics', asyncRoute(async(req,res)=>{
   const writable=memberships.find(m=>m.family_id===member.family_id && ['owner','admin','caregiver'].includes(m.role));
   if(!writable) return res.status(403).json({error:'You do not have permission to record measurements for this member.'});
   const measuredAt=req.body.measured_at?parseLocalIST(req.body.measured_at):new Date();
-  if(Number.isNaN(measuredAt.getTime())||measuredAt.getTime()>Date.now()+5*60*1000) return res.status(400).json({error:'Enter a valid measurement date and time.'});
+  if(!measuredAt||Number.isNaN(measuredAt.getTime())||measuredAt.getTime()>Date.now()+5*60*1000) return res.status(400).json({error:'Enter a valid measurement date and time.'});
   const isPressure=metric==='blood_pressure';
   const raw=isPressure?text(req.body.value_text,40):req.body.value_numeric;
   if(isPressure){
