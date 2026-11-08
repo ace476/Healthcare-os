@@ -122,6 +122,81 @@
   $('markAllRead').addEventListener('click',()=>{notifications.forEach(n=>n.read=true);renderNotifications();});
   $('resetDemo').addEventListener('click',()=>{doses.forEach((d,i)=>d.status=i===0?'taken':'pending');notifications.forEach((n,i)=>n.read=i===2);monthOffset=0;selectedDay=null;renderDoses();renderCalendar();renderNotifications();updateUnread();document.querySelectorAll('[data-setting]').forEach(input=>{input.checked=input.dataset.setting!=='family';});});
   document.querySelectorAll('[data-setting]').forEach(input=>input.addEventListener('change',()=>{const title=input.closest('label').querySelector('strong').textContent;const note=document.createElement('p');note.className='settings-footnote';note.textContent=title+' preference updated for this demo session.';input.closest('label').after(note);setTimeout(()=>note.remove(),2200);}));
+
+  const quickDialog=$('quickAddDialog'),quickFields=$('quickAddFields'),quickForm=$('quickAddForm');
+  let quickKind='';
+  const familyNames=()=>family.map(f=>f.name.replace(' Family',''));
+  function field(label,name,type='text',value='',options=null,full=false,required=true){
+    const input=options?'<select name="'+name+'" '+(required?'required':'')+'>'+options.map(o=>'<option value="'+esc(o.value)+'" '+(o.value===value?'selected':'')+'>'+esc(o.label)+'</option>').join('')+'</select>':'<input name="'+name+'" type="'+type+'" value="'+esc(value)+'" '+(required?'required':'')+'>';
+    return '<div class="quick-field '+(full?'full':'')+'"><label for="quick-'+name+'">'+esc(label)+'</label>'+input.replace('name="'+name+'"','id="quick-'+name+'" name="'+name+'"')+'</div>';
+  }
+  function openQuickAdd(kind){
+    quickKind=kind;
+    const configs={
+      appointment:{title:'Schedule an appointment',desc:'Add the visit details once. You can review it in your calendar.',fields:
+        field('Appointment title','title','text','Routine follow-up',null,true)+
+        field('Family member','member','text','Alex')+
+        field('Doctor / provider','doctor','text','Dr. Meera Shah')+
+        field('Clinic / location','clinic','text','Sample City Clinic')+
+        field('Date','date','date','2026-11-20')+
+        field('Time','time','time','10:30')+
+        field('Repeat','repeat','text','Does not repeat',null,true,false)+
+        field('Notes (optional)','notes','text','',null,true,false)},
+      medication:{title:'Add a medication',desc:'Create a simple daily schedule for this sample profile.',fields:
+        field('Medication name','name','text','',null,true)+
+        field('Family member','member','text','Alex')+
+        field('Dosage','dose','text','1 tablet')+
+        field('Schedule time','time','time','08:00')+
+        field('Frequency','frequency','text','Every day')+
+        field('Start date','start','date','2026-11-09')+
+        field('Refill after (days)','refill','number','30')+
+        field('Instructions (optional)','instruction','text','',null,true,false)},
+      measurement:{title:'Log a health reading',desc:'Record a sample measurement. This demo does not interpret readings.',fields:
+        field('Measurement','metric','text','Blood pressure')+
+        field('Family member','member','text','Alex')+
+        field('Value','value','text','120/80')+
+        field('Unit','unit','text','mmHg')+
+        field('Date','date','date','2026-11-09')+
+        field('Time','time','time','09:00')+
+        field('Note (optional)','notes','text','',null,true,false)},
+      family:{title:'Add a family member',desc:'Add a fictional profile to the sample care circle.',fields:
+        field('Full name','name','text','',null,true)+
+        field('Relationship','relation','text','Family member')+
+        field('Role','role','text','Member')+
+        field('Initials','initials','text','',null,false,false)}
+    };
+    const config=configs[kind];if(!config)return;
+    $('quickAddTitle').textContent=config.title;$('quickAddDescription').textContent=config.desc;quickFields.innerHTML=config.fields;
+    if(typeof quickDialog.showModal==='function')quickDialog.showModal();else quickDialog.setAttribute('open','');
+    const first=quickFields.querySelector('input,select');if(first)first.focus();
+  }
+  function closeQuickAdd(){if(quickDialog.open)quickDialog.close();else quickDialog.removeAttribute('open');}
+  function notifySaved(message){
+    document.querySelector('.quick-add-toast')?.remove();
+    const toast=document.createElement('div');toast.className='quick-add-toast';toast.setAttribute('role','status');toast.textContent=message;document.body.append(toast);window.setTimeout(()=>toast.remove(),2600);
+  }
+  document.querySelectorAll('[data-quick-add]').forEach(btn=>btn.addEventListener('click',()=>openQuickAdd(btn.dataset.quickAdd)));
+  $('closeQuickAdd').addEventListener('click',closeQuickAdd);$('cancelQuickAdd').addEventListener('click',closeQuickAdd);
+  quickDialog.addEventListener('click',e=>{if(e.target===quickDialog)closeQuickAdd();});
+  quickForm.addEventListener('submit',e=>{
+    e.preventDefault();const data=Object.fromEntries(new FormData(quickForm).entries());
+    if(quickKind==='appointment'){
+      const dt=new Date(data.date+'T12:00:00');if(Number.isNaN(dt.getTime()))return;
+      appointments.push({id:Date.now(),day:dt.getDate(),month:dt.getMonth(),title:data.title,doctor:data.doctor,specialty:'Sample provider',clinic:data.clinic,time:new Date('1970-01-01T'+data.time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),status:'scheduled',member:data.member});
+      monthOffset=(dt.getFullYear()-2026)*12+dt.getMonth()-10;selectedDay=dt.getDate();renderCalendar();openView('appointments');notifySaved('Appointment added to the sample calendar.');
+    }else if(quickKind==='medication'){
+      const med={id:Date.now(),name:data.name,dose:data.dose,time:new Date('1970-01-01T'+data.time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),instruction:data.instruction||'No extra instructions',member:data.member,refill:(Number(data.refill)>0?Number(data.refill):30)+' days refill estimate',status:'active'};
+      medications.push(med);doses.push({id:med.id,name:med.name,time:med.time,member:med.member,status:'pending'});renderDoses();openView('medications');notifySaved('Medication and daily check-in schedule added.');
+    }else if(quickKind==='measurement'){
+      const row=document.createElement('div');row.className='activity-item';row.innerHTML='<span class="activity-icon mint">⌁</span><div><strong>'+esc(data.metric)+': '+esc(data.value)+' '+esc(data.unit)+'</strong><small>'+esc(data.member)+' · '+esc(data.date)+' '+esc(data.time)+'</small></div><span class="activity-tag">Measurement</span>';
+      document.querySelector('#view-family .activity-list')?.prepend(row);openView('analytics');notifySaved('Sample health reading added to the activity feed.');
+    }else if(quickKind==='family'){
+      const name=data.name.trim();const initials=(data.initials.trim()||name.split(/\s+/).map(x=>x[0]).join('').slice(0,2)).toUpperCase();
+      family.push({name,initials,relation:data.relation,role:data.role,tone:'teal',activity:'New sample profile'});renderFamily();openView('family');notifySaved('Family member added to the sample care circle.');
+    }
+    closeQuickAdd();quickForm.reset();
+  });
+
   renderDoses();renderCalendar();renderFamily();renderNotifications();updateUnread();
   $('analyticsAdherence').textContent='92%';
 })();
