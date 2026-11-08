@@ -140,19 +140,19 @@
         field('Clinic / location','clinic','text','Sample City Clinic')+
         field('Date','date','date','2026-11-20')+
         field('Time','time','time','10:30')+
-        field('Repeat','repeat','text','Does not repeat',null,true,false)+
+        field('Repeat','repeat','select','none',[{value:'none',label:'Does not repeat'},{value:'weekly',label:'Every week'},{value:'monthly',label:'Every month'}],true,false)+
         field('Notes (optional)','notes','text','',null,true,false)},
       medication:{title:'Add a medication',desc:'Create a simple daily schedule for this sample profile.',fields:
         field('Medication name','name','text','',null,true)+
         field('Family member','member','text','Alex')+
         field('Dosage','dose','text','1 tablet')+
         field('Schedule time','time','time','08:00')+
-        field('Frequency','frequency','text','Every day')+
+        field('Frequency','frequency','select','daily',[{value:'daily',label:'Every day'},{value:'twice',label:'Twice daily'},{value:'weekly',label:'Once a week'},{value:'as-needed',label:'As directed / as needed'}])+
         field('Start date','start','date','2026-11-09')+
         field('Refill after (days)','refill','number','30')+
         field('Instructions (optional)','instruction','text','',null,true,false)},
       measurement:{title:'Log a health reading',desc:'Record a sample measurement. This demo does not interpret readings.',fields:
-        field('Measurement','metric','text','Blood pressure')+
+        field('Measurement','metric','select','Blood pressure',[{value:'Blood pressure',label:'Blood pressure'},{value:'Heart rate',label:'Heart rate'},{value:'Temperature',label:'Temperature'},{value:'Oxygen saturation',label:'Oxygen saturation'},{value:'Weight',label:'Weight'},{value:'Blood glucose',label:'Blood glucose'}])+
         field('Family member','member','text','Alex')+
         field('Value','value','text','120/80')+
         field('Unit','unit','text','mmHg')+
@@ -162,7 +162,7 @@
       family:{title:'Add a family member',desc:'Add a fictional profile to the sample care circle.',fields:
         field('Full name','name','text','',null,true)+
         field('Relationship','relation','text','Family member')+
-        field('Role','role','text','Member')+
+        field('Role','role','select','Member',[{value:'Member',label:'Family member'},{value:'Caregiver',label:'Caregiver'}])+
         field('Initials','initials','text','',null,false,false)}
     };
     const config=configs[kind];if(!config)return;
@@ -182,10 +182,10 @@
     e.preventDefault();const data=Object.fromEntries(new FormData(quickForm).entries());
     if(quickKind==='appointment'){
       const dt=new Date(data.date+'T12:00:00');if(Number.isNaN(dt.getTime()))return;
-      appointments.push({id:Date.now(),day:dt.getDate(),month:dt.getMonth(),title:data.title,doctor:data.doctor,specialty:'Sample provider',clinic:data.clinic,time:new Date('1970-01-01T'+data.time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),status:'scheduled',member:data.member});
+      appointments.push({id:Date.now(),day:dt.getDate(),month:dt.getMonth(),title:data.title,doctor:data.doctor,specialty:'Sample provider',clinic:data.clinic,time:new Date('1970-01-01T'+data.time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),status:'scheduled',member:data.member,repeat:data.repeat||'none'});
       monthOffset=(dt.getFullYear()-2026)*12+dt.getMonth()-10;selectedDay=dt.getDate();renderCalendar();openView('appointments');notifySaved('Appointment added to the sample calendar.');
     }else if(quickKind==='medication'){
-      const med={id:Date.now(),name:data.name,dose:data.dose,time:new Date('1970-01-01T'+data.time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),instruction:data.instruction||'No extra instructions',member:data.member,refill:(Number(data.refill)>0?Number(data.refill):30)+' days refill estimate',status:'active'};
+      const med={id:Date.now(),name:data.name,dose:data.dose+' · '+({daily:'daily',twice:'twice daily',weekly:'weekly', 'as-needed':'as directed'}[data.frequency]||'daily'),time:new Date('1970-01-01T'+data.time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),instruction:data.instruction||'No extra instructions',member:data.member,refill:(Number(data.refill)>0?Number(data.refill):30)+' days refill estimate',status:'active'};
       medications.push(med);doses.push({id:med.id,name:med.name,time:med.time,member:med.member,status:'pending'});renderDoses();openView('medications');notifySaved('Medication and daily check-in schedule added.');
     }else if(quickKind==='measurement'){
       const row=document.createElement('div');row.className='activity-item';row.innerHTML='<span class="activity-icon mint">⌁</span><div><strong>'+esc(data.metric)+': '+esc(data.value)+' '+esc(data.unit)+'</strong><small>'+esc(data.member)+' · '+esc(data.date)+' '+esc(data.time)+'</small></div><span class="activity-tag">Measurement</span>';
