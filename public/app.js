@@ -197,7 +197,19 @@
     const form = event.currentTarget;
     setBusy(form, true, 'Updating password…');
     try {
-      const { data: sessionData } = await supabase.auth.getSession();\n      const accessToken = sessionData?.session?.access_token;\n      if (!accessToken) throw new Error('Your password reset session has expired. Request a new reset link.');\n      const screeningResponse = await fetch('/api/auth/password-check', {\n        method: 'POST',\n        credentials: 'same-origin',\n        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },\n        body: JSON.stringify({ password })\n      });\n      const screening = await screeningResponse.json().catch(() => ({}));\n      if (!screeningResponse.ok) throw new Error(screening.error || 'Unable to screen this password safely.');\n      if (screening.compromised) throw new Error('This password appears in known data breaches. Choose a different password.');\n      const { error } = await supabase.auth.updateUser({ password });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error('Your password reset session has expired. Request a new reset link.');
+      const screeningResponse = await fetch('/api/auth/password-check', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
+        body: JSON.stringify({ password })
+      });
+      const screening = await screeningResponse.json().catch(() => ({}));
+      if (!screeningResponse.ok) throw new Error(screening.error || 'Unable to screen this password safely.');
+      if (screening.compromised) throw new Error('This password appears in known data breaches. Choose a different password.');
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       await supabase.auth.signOut();
       window.location.replace('/login.html?password=updated');
