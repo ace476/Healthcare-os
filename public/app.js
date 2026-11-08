@@ -7,7 +7,7 @@
   const params = new URLSearchParams(window.location.search);
   const recoveryMode = params.get('mode') === 'recovery';
   const rememberMe = $('rememberMe');
-  let recoveryReady = false;
+  let recoveryReady = false;\n  const signupAvailable = false;
 
   function safeNextPath() {
     const requested = params.get('next') || '/dashboard.html';
@@ -36,7 +36,7 @@
     notice.textContent = '';
   }
   function setAuthMode(mode) {
-    const signup = mode === 'signup';
+    const signup = mode === 'signup' && signupAvailable;
     const signInForm = $('signInForm');
     const signUpForm = $('signUpForm');
     if (!signInForm || !signUpForm) return;
@@ -245,7 +245,7 @@
     showNotice('Privacy notice: this prototype uses sample records. Do not enter real or sensitive health information.', 'success');
   });
 
-  setAuthMode(params.get('mode') === 'signup' ? 'signup' : 'signin');
+  setAuthMode(params.get('mode') === 'signup' ? 'signup' : 'signin');\n  if (params.get('mode') === 'signup' && !signupAvailable) showNotice('New account registration is paused for this public demo. Explore the sample workspace or sign in to an existing account.', 'success');
   if (recoveryMode) showRecoveryForm(false);
   if (params.get('password') === 'updated') showNotice('Your password has been updated. Sign in with your new password.', 'success');
 
