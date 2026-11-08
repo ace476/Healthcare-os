@@ -1,5 +1,6 @@
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
+const { parseLocalIST } = require('./lib/time-utils');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -187,17 +188,6 @@ app.post('/api/family-members', asyncRoute(async (req, res) => {
 }));
 
 const APPOINTMENT_TIME_ZONE = 'Asia/Kolkata';
-function parseLocalIST(value) {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return null;
-  const [datePart, timePart] = value.split('T');
-  const [year, month, day] = datePart.split('-').map(Number);
-  const [hour, minute] = timePart.split(':').map(Number);
-  const calendarCheck = new Date(Date.UTC(year, month - 1, day));
-  if (calendarCheck.getUTCFullYear() !== year || calendarCheck.getUTCMonth() !== month - 1 ||
-      calendarCheck.getUTCDate() !== day || hour > 23 || minute > 59) return null;
-  const parsed = new Date(value + ':00+05:30');
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
 function appointmentLocalParts(value) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: APPOINTMENT_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit',
