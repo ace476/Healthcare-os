@@ -40,7 +40,7 @@
         </div>
         <div class="auth-tabs" id="authTabs" role="tablist" aria-label="Account access">
           <button class="auth-tab active" id="signInTab" type="button" role="tab" aria-selected="true">Sign in</button>
-          <button class="auth-tab" id="signUpTab" type="button" role="tab" aria-selected="false">Create account</button>
+          <button class="auth-tab" id="signUpTab" hidden type="button" role="tab" aria-selected="false">Create account</button>
         </div>
         <div class="notice" id="authNotice" role="status" aria-live="polite" hidden></div>
         <form id="signInForm" class="auth-fields" novalidate>
@@ -63,20 +63,20 @@
         </form>
         <form id="recoveryForm" class="auth-fields" novalidate hidden>
           <label for="recoveryPassword">New password</label>
-          <div class="password-wrap"><input id="recoveryPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" minlength="8" required disabled /><button class="password-toggle" type="button" data-target="recoveryPassword" aria-label="Show password">Show</button></div>
+          <div class="password-wrap"><input id="recoveryPassword" type="password" autocomplete="new-password" placeholder="At least 12 characters" minlength="12" required disabled /><button class="password-toggle" type="button" data-target="recoveryPassword" aria-label="Show password">Show</button></div>
           <label for="recoveryConfirm">Confirm new password</label>
           <input id="recoveryConfirm" type="password" autocomplete="new-password" placeholder="Enter your new password again" required disabled />
           <button class="submit-button" type="submit" disabled><span>Update password</span><span aria-hidden="true">→</span></button>
         </form>
         <div class="divider"><span>OR TRY THE DEMO</span></div>
         <button type="button" class="demo-button" id="demoButton"><span class="demo-avatar">A</span><span class="demo-copy"><strong>Explore the family dashboard</strong><small>Use a sample account · No personal data</small></span><span class="demo-arrow">↗</span></button>
-        <p class="auth-legal">By continuing, you agree to our <a href="#terms" id="termsLink">Terms</a> and <a href="#privacy" id="privacyLink">Privacy Notice</a>.</p>
+        <p class="auth-legal">By continuing, you agree to our <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy Notice</a>.</p>
       </div>
       <div class="auth-bottom"><span>© 2026 Healthcare OS</span><span><i></i> A calmer way to care</span></div>
     </main>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
   <script src="/app.js"></script>
 </body>

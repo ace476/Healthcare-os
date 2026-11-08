@@ -1,5 +1,6 @@
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
+const { parseLocalIST } = require('./lib/time-utils');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,14 +12,14 @@ app.disable('x-powered-by');
 // Trust one proxy hop so req.ip resolves to the client address for abuse controls.
 app.set('trust proxy', 1);
 
-// Baseline browser security headers. Content Security Policy is intentionally
-// not set here yet because the current pages load Supabase and UI assets from
-// multiple external CDNs; deploy a tested CSP after consolidating those origins.
+// Browser security headers. The CSP allows only the app origin plus the
+// explicitly required Supabase, jsDelivr and Google Fonts origins.
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://kkmuqehbjhanqckcjqzg.supabase.co wss://kkmuqehbjhanqckcjqzg.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; upgrade-insecure-requests");
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   next();
 });
@@ -50,6 +51,22 @@ async function requireAuth(req, res, next) {
 }
 
 const asyncRoute = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+async function isCompromisedPassword(password) {
+  const hash = require('crypto').createHash('sha1').update(password, 'utf8').digest('hex').toUpperCase();
+  const prefix = hash.slice(0, 5);
+  const suffix = hash.slice(5);
+  const response = await fetch('https://api.pwnedpasswords.com/range/' + prefix, {
+    headers: { 'User-Agent': 'Healthcare-OS-Password-Check/1.0', 'Add-Padding': 'true' },
+    signal: AbortSignal.timeout(7000)
+  });
+  if (!response.ok) throw new Error('Password screening service unavailable');
+  const lines = (await response.text()).split(/\r?\n/);
+  return lines.some(line => {
+    const [candidate, count] = line.trim().split(':');
+    return candidate?.toUpperCase() === suffix && Number(count) > 0;
+  });
+}
+
 const fail = (res, error) => {
   console.error('Healthcare OS database request failed:', error.message);
   return res.status(400).json({ error: 'The request could not be completed. Please check your information and try again.' });
@@ -84,79 +101,30 @@ async function ensureWorkspace(supabase, user) {
 }
 
 
-const signupAttempts = new Map();
-function allowSignupAttempt(ip) {
-  const now = Date.now();
-  const windowMs = 15 * 60 * 1000;
-  const current = signupAttempts.get(ip);
-  if (!current || now - current.startedAt >= windowMs) {
-    signupAttempts.set(ip, { startedAt: now, count: 1 });
-    return true;
-  }
-  if (current.count >= 5) return false;
-  current.count += 1;
-  if (signupAttempts.size > 5000) {
-    for (const [key, value] of signupAttempts) {
-      if (now - value.startedAt >= windowMs) signupAttempts.delete(key);
-    }
-  }
-  return true;
-}
+// Public-demo release: account creation is paused. Visitors can explore the
+// isolated fictional demo without creating an account or entering patient data.
+// Existing registered users can still sign in to their private workspace.
+app.post('/api/auth/signup', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  return res.status(403).json({ error: 'New account registration is paused while Healthcare OS is presented as a public demo. Please explore the sample workspace or sign in to an existing account.' });
+});
 
-async function isCompromisedPassword(password) {
-  const hash = require('crypto').createHash('sha1').update(password, 'utf8').digest('hex').toUpperCase();
-  const prefix = hash.slice(0, 5);
-  const suffix = hash.slice(5);
-  const response = await fetch('https://api.pwnedpasswords.com/range/' + prefix, {
-    headers: {
-      'User-Agent': 'Healthcare-OS-Password-Check/1.0',
-      'Add-Padding': 'true'
-    },
-    signal: AbortSignal.timeout(7000)
-  });
-  if (!response.ok) throw new Error('Password screening service unavailable');
-  const lines = (await response.text()).split(/\r?\n/);
-  return lines.some(line => {
-    const [candidate, count] = line.trim().split(':');
-    return candidate?.toUpperCase() === suffix && Number(count) > 0;
-  });
-}
-
-// Signup is deliberately public, but password screening happens on the server
-// before the password is sent to Supabase Auth.
-app.post('/api/auth/signup', asyncRoute(async (req, res) => {
-  const ip = req.ip || req.socket.remoteAddress || 'unknown';
-  if (!allowSignupAttempt(ip)) return res.status(429).json({ error: 'Too many sign-up attempts. Please wait 15 minutes and try again.' });
-
-  const name = text(req.body?.full_name, 80);
-  const email = text(req.body?.email, 254).toLowerCase();
+app.get('/api/health', (_req, res) => res.json({ status: 'ok', app: 'Healthcare OS', timestamp: new Date().toISOString() }));
+app.post('/api/auth/password-check', requireAuth, asyncRoute(async (req, res) => {
   const password = typeof req.body?.password === 'string' ? req.body.password : '';
-  if (name.length < 2) return res.status(400).json({ error: 'Enter your full name (at least 2 characters).' });
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address.' });
-  if (password.length < 8 || password.length > 128) return res.status(400).json({ error: 'Your password must contain between 8 and 128 characters.' });
-
+  if (password.length < 12 || password.length > 128) {
+    return res.status(400).json({ error: 'Choose a password between 12 and 128 characters.' });
+  }
   let compromised;
   try {
     compromised = await isCompromisedPassword(password);
   } catch (_error) {
-    return res.status(503).json({ error: 'We could not check this password safely right now. Please try again in a moment.' });
+    return res.status(503).json({ error: 'We could not screen this password safely right now. Please try again.' });
   }
-  if (compromised) return res.status(400).json({ error: 'This password has appeared in known data breaches. Please choose a different password.' });
-
-  const signupClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-  });
-  const { data, error } = await signupClient.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name: name } }
-  });
-  if (error) return res.status(400).json({ error: error.message || 'Unable to create your account. Please try again.' });
   res.set('Cache-Control', 'no-store');
-  return res.status(201).json({ user: data.user, session: data.session || null });
+  return res.json({ compromised });
 }));
 
-app.get('/api/health', (_req, res) => res.json({ status: 'ok', app: 'Healthcare OS', timestamp: new Date().toISOString() }));
 
 // Every application-data endpoint below requires a verified Supabase user token.
 // The same user token is forwarded to Postgres, so database RLS remains in force.
@@ -220,11 +188,6 @@ app.post('/api/family-members', asyncRoute(async (req, res) => {
 }));
 
 const APPOINTMENT_TIME_ZONE = 'Asia/Kolkata';
-function parseLocalIST(value) {
-  if (typeof value !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/.test(value)) return null;
-  const parsed = new Date(value + ':00+05:30');
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
 function appointmentLocalParts(value) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: APPOINTMENT_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit',
@@ -387,7 +350,7 @@ app.post('/api/health-metrics', asyncRoute(async(req,res)=>{
   const writable=memberships.find(m=>m.family_id===member.family_id && ['owner','admin','caregiver'].includes(m.role));
   if(!writable) return res.status(403).json({error:'You do not have permission to record measurements for this member.'});
   const measuredAt=req.body.measured_at?parseLocalIST(req.body.measured_at):new Date();
-  if(Number.isNaN(measuredAt.getTime())||measuredAt.getTime()>Date.now()+5*60*1000) return res.status(400).json({error:'Enter a valid measurement date and time.'});
+  if(!measuredAt||Number.isNaN(measuredAt.getTime())||measuredAt.getTime()>Date.now()+5*60*1000) return res.status(400).json({error:'Enter a valid measurement date and time.'});
   const isPressure=metric==='blood_pressure';
   const raw=isPressure?text(req.body.value_text,40):req.body.value_numeric;
   if(isPressure){

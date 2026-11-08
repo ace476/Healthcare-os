@@ -8,6 +8,7 @@
   const recoveryMode = params.get('mode') === 'recovery';
   const rememberMe = $('rememberMe');
   let recoveryReady = false;
+  const signupAvailable = false;
 
   function safeNextPath() {
     const requested = params.get('next') || '/dashboard.html';
@@ -36,7 +37,7 @@
     notice.textContent = '';
   }
   function setAuthMode(mode) {
-    const signup = mode === 'signup';
+    const signup = mode === 'signup' && signupAvailable;
     const signInForm = $('signInForm');
     const signUpForm = $('signUpForm');
     if (!signInForm || !signUpForm) return;
@@ -191,11 +192,23 @@
     if (!recoveryReady) return showNotice('Open a valid password reset link from your email first.');
     const password = $('recoveryPassword')?.value || '';
     const confirmation = $('recoveryConfirm')?.value || '';
-    if (password.length < 8 || password.length > 128) return showNotice('Your new password must contain between 8 and 128 characters.');
+    if (password.length < 12 || password.length > 128) return showNotice('Your new password must contain between 12 and 128 characters.');
     if (password !== confirmation) return showNotice('The passwords do not match.');
     const form = event.currentTarget;
     setBusy(form, true, 'Updating password…');
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error('Your password reset session has expired. Request a new reset link.');
+      const screeningResponse = await fetch('/api/auth/password-check', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
+        body: JSON.stringify({ password })
+      });
+      const screening = await screeningResponse.json().catch(() => ({}));
+      if (!screeningResponse.ok) throw new Error(screening.error || 'Unable to screen this password safely.');
+      if (screening.compromised) throw new Error('This password appears in known data breaches. Choose a different password.');
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       await supabase.auth.signOut();
@@ -209,7 +222,7 @@
   });
 
   $('demoButton')?.addEventListener('click', () => {
-    showNotice('Demo access is temporarily unavailable while we finish securing separate family workspaces. Please sign in or create an account to continue.');
+    window.location.assign('/demo.html');
   });
 
   $('forgotButton')?.addEventListener('click', async () => {
@@ -236,16 +249,9 @@
     }
   });
 
-  $('termsLink')?.addEventListener('click', event => {
-    event.preventDefault();
-    showNotice('Prototype terms: use sample information only. This app is not intended for real patient records.', 'success');
-  });
-  $('privacyLink')?.addEventListener('click', event => {
-    event.preventDefault();
-    showNotice('Privacy notice: this prototype uses sample records. Do not enter real or sensitive health information.', 'success');
-  });
 
   setAuthMode(params.get('mode') === 'signup' ? 'signup' : 'signin');
+  if (params.get('mode') === 'signup' && !signupAvailable) showNotice('New account registration is paused for this public demo. Explore the sample workspace or sign in to an existing account.', 'success');
   if (recoveryMode) showRecoveryForm(false);
   if (params.get('password') === 'updated') showNotice('Your password has been updated. Sign in with your new password.', 'success');
 
