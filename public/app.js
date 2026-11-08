@@ -192,12 +192,12 @@
     if (!recoveryReady) return showNotice('Open a valid password reset link from your email first.');
     const password = $('recoveryPassword')?.value || '';
     const confirmation = $('recoveryConfirm')?.value || '';
-    if (password.length < 8 || password.length > 128) return showNotice('Your new password must contain between 8 and 128 characters.');
+    if (password.length < 12 || password.length > 128) return showNotice('Your new password must contain between 12 and 128 characters.');
     if (password !== confirmation) return showNotice('The passwords do not match.');
     const form = event.currentTarget;
     setBusy(form, true, 'Updating password…');
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { data: sessionData } = await supabase.auth.getSession();\n      const accessToken = sessionData?.session?.access_token;\n      if (!accessToken) throw new Error('Your password reset session has expired. Request a new reset link.');\n      const screeningResponse = await fetch('/api/auth/password-check', {\n        method: 'POST',\n        credentials: 'same-origin',\n        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },\n        body: JSON.stringify({ password })\n      });\n      const screening = await screeningResponse.json().catch(() => ({}));\n      if (!screeningResponse.ok) throw new Error(screening.error || 'Unable to screen this password safely.');\n      if (screening.compromised) throw new Error('This password appears in known data breaches. Choose a different password.');\n      const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       await supabase.auth.signOut();
       window.location.replace('/login.html?password=updated');
