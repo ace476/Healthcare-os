@@ -114,7 +114,7 @@
   $('appointmentFilter').addEventListener('change',renderAppointments);
   $('addAppointmentButton').addEventListener('click',()=>{appointments.push({id:Date.now(),day:24,month:10,title:'New sample visit',doctor:'Sample clinician',specialty:'General care',clinic:'Demo clinic',time:'2:00 PM',status:'scheduled',member:'Alex'});selectedDay=24;monthOffset=0;renderCalendar();});
   $('markAllRead').addEventListener('click',()=>{notifications.forEach(n=>n.read=true);renderNotifications();});
-  $('resetDemo').addEventListener('click',()=>{doses.forEach((d,i)=>d.status=i===0?'taken':'pending');notifications.forEach((n,i)=>n.read=i===2);monthOffset=0;selectedDay=null;renderDoses();renderCalendar();renderNotifications();updateUnread();document.querySelectorAll('[data-setting]').forEach(input=>input.checked=input.dataset.setting!=='family';);});
+  $('resetDemo').addEventListener('click',()=>{doses.forEach((d,i)=>d.status=i===0?'taken':'pending');notifications.forEach((n,i)=>n.read=i===2);monthOffset=0;selectedDay=null;renderDoses();renderCalendar();renderNotifications();updateUnread();document.querySelectorAll('[data-setting]').forEach(input=>input.checked=input.dataset.setting!=='family';});});
   document.querySelectorAll('[data-setting]').forEach(input=>input.addEventListener('change',()=>{const title=input.closest('label').querySelector('strong').textContent;const note=document.createElement('p');note.className='settings-footnote';note.textContent=title+' preference updated for this demo session.';input.closest('label').after(note);setTimeout(()=>note.remove(),2200);}));
   renderDoses();renderCalendar();renderFamily();renderNotifications();updateUnread();
   $('analyticsAdherence').textContent='92%';
