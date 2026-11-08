@@ -50,6 +50,22 @@ async function requireAuth(req, res, next) {
 }
 
 const asyncRoute = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+async function isCompromisedPassword(password) {
+  const hash = require('crypto').createHash('sha1').update(password, 'utf8').digest('hex').toUpperCase();
+  const prefix = hash.slice(0, 5);
+  const suffix = hash.slice(5);
+  const response = await fetch('https://api.pwnedpasswords.com/range/' + prefix, {
+    headers: { 'User-Agent': 'Healthcare-OS-Password-Check/1.0', 'Add-Padding': 'true' },
+    signal: AbortSignal.timeout(7000)
+  });
+  if (!response.ok) throw new Error('Password screening service unavailable');
+  const lines = (await response.text()).split(/\r?\n/);
+  return lines.some(line => {
+    const [candidate, count] = line.trim().split(':');
+    return candidate?.toUpperCase() === suffix && Number(count) > 0;
+  });
+}
+
 const fail = (res, error) => {
   console.error('Healthcare OS database request failed:', error.message);
   return res.status(400).json({ error: 'The request could not be completed. Please check your information and try again.' });
@@ -93,6 +109,21 @@ app.post('/api/auth/signup', (_req, res) => {
 });
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', app: 'Healthcare OS', timestamp: new Date().toISOString() }));
+app.post('/api/auth/password-check', requireAuth, asyncRoute(async (req, res) => {
+  const password = typeof req.body?.password === 'string' ? req.body.password : '';
+  if (password.length < 12 || password.length > 128) {
+    return res.status(400).json({ error: 'Choose a password between 12 and 128 characters.' });
+  }
+  let compromised;
+  try {
+    compromised = await isCompromisedPassword(password);
+  } catch (_error) {
+    return res.status(503).json({ error: 'We could not screen this password safely right now. Please try again.' });
+  }
+  res.set('Cache-Control', 'no-store');
+  return res.json({ compromised });
+}));
+
 
 // Every application-data endpoint below requires a verified Supabase user token.
 // The same user token is forwarded to Postgres, so database RLS remains in force.
