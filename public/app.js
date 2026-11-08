@@ -209,7 +209,7 @@
   });
 
   $('demoButton')?.addEventListener('click', () => {
-    showNotice('Demo access is temporarily unavailable while we finish securing separate family workspaces. Please sign in or create an account to continue.');
+    window.location.assign('/demo.html');
   });
 
   $('forgotButton')?.addEventListener('click', async () => {
