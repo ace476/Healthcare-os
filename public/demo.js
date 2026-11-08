@@ -57,7 +57,7 @@
   function updateAdherence(){
     const taken=doses.filter(d=>d.status==='taken').length;
     const missed=doses.filter(d=>d.status==='missed').length;
-    const pct=Math.round((46+taken-1)/(50)*100);
+    const takenTotal=46+taken-1,missedTotal=4+missed;const pct=Math.round((takenTotal/(takenTotal+missedTotal))*100);
     ['overviewAdherence','analyticsAdherence'].forEach(id=>{if($(id))$(id).innerHTML=pct+'<span>%</span>';});
     $('analyticsScore').textContent=pct+'%';$('adherenceBar').style.width=pct+'%';
     $('takenCount').textContent=45+taken;$('missedCount').textContent=4+missed;
