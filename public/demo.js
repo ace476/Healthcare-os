@@ -72,7 +72,13 @@
     $('medicationCards').innerHTML=medications.map(m=>'<article class="medication-card"><div class="medication-card-top"><span class="medication-symbol">✚</span><span class="status-pill">Active</span></div><h3>'+esc(m.name)+'</h3><p>'+esc(m.member)+' · '+esc(m.dose)+'</p><p>'+esc(m.time)+' · '+esc(m.refill)+'</p><p class="medication-instruction">'+esc(m.instruction)+'</p><div class="medication-actions"><button class="dose-action taken" data-dose="'+m.id+'" data-status="taken">Mark taken</button><button class="dose-action" data-dose="'+m.id+'" data-status="missed">Mark missed</button></div></article>').join('');
     document.querySelectorAll('[data-dose]').forEach(btn=>{
       const d=doses.find(x=>x.id===Number(btn.dataset.dose));
-      if(d&&d.status!=='pending'){btn.disabled=true;}
+      if(d&&d.status!=='pending'){btn.disabled=true;return;}
+      btn.addEventListener('click',()=>{
+        const dose=doses.find(x=>x.id===Number(btn.dataset.dose));
+        if(!dose||dose.status!=='pending') return;
+        dose.status=btn.dataset.status;
+        renderDoses();
+      });
     });
     updateAdherence();
   }
