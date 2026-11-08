@@ -81,6 +81,7 @@
               </div>
             </article>
           </div>
+          <section class="surface quick-start"><div class="surface-heading"><div><span class="section-kicker">GET THINGS DONE</span><h2>Quick add</h2><p>Add information in a few simple steps.</p></div></div><div class="quick-add-grid"><button class="quick-add-card" data-quick-add="appointment"><span>▦</span><strong>Schedule a visit</strong><small>Choose date, time and doctor</small></button><button class="quick-add-card" data-quick-add="medication"><span>✚</span><strong>Add medication</strong><small>Set dose and daily timings</small></button><button class="quick-add-card" data-quick-add="measurement"><span>⌁</span><strong>Log a reading</strong><small>Record a health measurement</small></button><button class="quick-add-card" data-quick-add="family"><span>♧</span><strong>Add family member</strong><small>Keep your care circle updated</small></button></div></section>
           <p class="clinical-note">Healthcare OS is a care-coordination prototype. It does not diagnose, interpret readings, or recommend treatment.</p>
         </section>
 
@@ -101,7 +102,7 @@
         </section>
 
         <section class="demo-view" id="view-appointments">
-          <div class="page-heading"><div><span class="eyebrow">PLAN AHEAD</span><h1>Appointments</h1><p>Keep upcoming visits, provider details and status in one view.</p></div><button class="button-primary" id="addAppointmentButton">＋ Add sample visit</button></div>
+          <div class="page-heading"><div><span class="eyebrow">PLAN AHEAD</span><h1>Appointments</h1><p>Keep upcoming visits, provider details and status in one view.</p></div><button class="button-primary" id="addAppointmentButton">＋ Schedule appointment</button></div>
           <div class="appointment-layout">
             <article class="surface calendar-surface"><div class="surface-heading"><div><span class="section-kicker">CALENDAR</span><h2>November 2026</h2></div><div class="calendar-controls"><button id="calendarPrev" aria-label="Previous month">‹</button><button id="calendarNext" aria-label="Next month">›</button></div></div><div class="calendar-grid" id="calendarGrid"></div><div class="calendar-legend"><span><i></i> Appointment day</span><span><b></b> Selected day</span></div></article>
             <article class="surface visit-list-surface"><div class="surface-heading"><div><span class="section-kicker">VISIT SCHEDULE</span><h2 id="selectedDateTitle">All upcoming visits</h2></div><select id="appointmentFilter" aria-label="Filter appointments"><option value="all">All statuses</option><option value="confirmed">Confirmed</option><option value="scheduled">Scheduled</option><option value="completed">Completed</option></select></div><div id="appointmentList" class="visit-list"></div></article>
@@ -110,7 +111,7 @@
         </section>
 
         <section class="demo-view" id="view-medications">
-          <div class="page-heading"><div><span class="eyebrow">EVERYDAY ROUTINES</span><h1>Medication management</h1><p>View sample schedules, dose history and refill prompts.</p></div><span class="period-pill">Sample profile · Alex</span></div>
+          <div class="page-heading"><div><span class="eyebrow">EVERYDAY ROUTINES</span><h1>Medication management</h1><p>View sample schedules, dose history and refill prompts.</p></div><button class="button-primary" data-quick-add="medication">＋ Add medication</button></div>
           <div class="med-summary-grid">
             <article class="metric-card"><div class="metric-top"><span>Active medicines</span><span class="metric-icon mint">✚</span></div><strong>3</strong><small>Sample medication list</small></article>
             <article class="metric-card"><div class="metric-top"><span>Today's doses</span><span class="metric-icon blue">◷</span></div><strong id="todayDoseCount">3</strong><small>Across the sample schedule</small></article>
@@ -124,7 +125,7 @@
         </section>
 
         <section class="demo-view" id="view-family">
-          <div class="page-heading"><div><span class="eyebrow">YOUR CARE CIRCLE</span><h1>Family & caregivers</h1><p>See who's connected and what each sample role can do.</p></div><span class="period-pill">4 sample profiles</span></div>
+          <div class="page-heading"><div><span class="eyebrow">YOUR CARE CIRCLE</span><h1>Family & caregivers</h1><p>See who's connected and what each sample role can do.</p></div><button class="button-primary" data-quick-add="family">＋ Add family member</button></div>
           <div class="family-grid" id="familyCards"></div>
           <article class="surface permissions-surface"><div class="surface-heading"><div><span class="section-kicker">ACCESS AT A GLANCE</span><h2>Caregiver permissions</h2><p>Illustrative role matrix for the prototype.</p></div></div><div class="permission-table-wrap"><table class="permission-table"><thead><tr><th>Permission</th><th>Owner</th><th>Caregiver</th><th>Member</th></tr></thead><tbody><tr><td>View family overview</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>Manage appointments</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>Update medication list</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>Manage caregiver access</td><td>✓</td><td>—</td><td>—</td></tr><tr><td>Change workspace settings</td><td>✓</td><td>—</td><td>—</td></tr></tbody></table></div><p class="clinical-note">This table illustrates intended product roles only. It does not grant or enforce access to any account.</p></article>
           <article class="surface activity-surface"><div class="surface-heading"><div><span class="section-kicker">FAMILY ACTIVITY</span><h2>Recent activity timeline</h2></div></div><div class="activity-list"><div class="activity-item"><span class="activity-icon mint">✓</span><div><strong>Morning routine checked</strong><small>Alex · Today, 8:15 AM</small></div><span class="activity-tag">Medication</span></div><div class="activity-item"><span class="activity-icon blue">▦</span><div><strong>Follow-up appointment confirmed</strong><small>Priya · Yesterday, 4:40 PM</small></div><span class="activity-tag">Appointment</span></div><div class="activity-item"><span class="activity-icon peach">✚</span><div><strong>Medication list reviewed</strong><small>Alex · Yesterday, 9:10 AM</small></div><span class="activity-tag">Medication</span></div><div class="activity-item"><span class="activity-icon violet">♧</span><div><strong>Caregiver profile viewed</strong><small>Sam · 7 November, 11:20 AM</small><span class="activity-tag">Family</span></div></div></div></article>
@@ -150,6 +151,7 @@
       </div>
     </main>
   </div>
-  <script src="/demo.js" defer></script>
+<dialog class="quick-add-dialog" id="quickAddDialog" aria-labelledby="quickAddTitle"><form id="quickAddForm" method="dialog"><div class="quick-add-dialog-head"><div><span class="section-kicker">QUICK ADD · SAMPLE WORKSPACE</span><h2 id="quickAddTitle">Add information</h2><p id="quickAddDescription">Complete the short form below.</p></div><button type="button" class="dialog-close" id="closeQuickAdd" aria-label="Close">×</button></div><div id="quickAddFields" class="quick-add-fields"></div><p class="quick-add-disclaimer">Fictional demo only. Changes stay in this page session and are not saved to an account or backend.</p><div class="quick-add-actions"><button type="button" class="button-secondary" id="cancelQuickAdd">Cancel</button><button type="submit" class="button-primary" id="saveQuickAdd">Save sample entry</button></div></form></dialog>
+    <script src="/demo.js" defer></script>
 </body>
 </html>
