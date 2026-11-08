@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0c615b">
+  <meta name="description" content="Explore the Healthcare OS interactive public demo using fictional sample data.">
+  <title>Interactive demo · Healthcare OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/demo.css">
+</head>
+<body class="demo-body">
+  <div class="demo-shell">
+    <aside class="demo-sidebar" id="demoSidebar">
+      <a class="demo-brand" href="/" aria-label="Healthcare OS home"><span class="brand-symbol">✚</span><span>healthcare<span>OS</span></span></a>
+      <div class="demo-workspace-label">SAMPLE WORKSPACE</div>
+      <nav class="demo-nav" aria-label="Demo sections">
+        <button class="demo-nav-link active" data-view="overview"><span>⌂</span> Overview</button>
+        <button class="demo-nav-link" data-view="analytics"><span>⌁</span> Health analytics</button>
+        <button class="demo-nav-link" data-view="appointments"><span>▦</span> Appointments <b>3</b></button>
+        <button class="demo-nav-link" data-view="medications"><span>✚</span> Medications</button>
+        <button class="demo-nav-link" data-view="family"><span>♧</span> Family & caregivers</button>
+        <button class="demo-nav-link" data-view="notifications"><span>◉</span> Notifications <b class="unread-count">2</b></button>
+      </nav>
+      <div class="demo-sidebar-bottom">
+        <div class="demo-help"><span>✦</span><strong>Care works better together.</strong><p>One calm place for the details that matter.</p></div>
+        <div class="demo-profile"><span class="avatar avatar-teal">AF</span><span><strong>Alex Family</strong><small>Sample workspace</small></span><span class="sample-dot"></span></div>
+        <a class="demo-exit" href="/">← Back to website</a>
+      </div>
+    </aside>
+
+    <main class="demo-main">
+      <header class="demo-topbar">
+        <button class="mobile-toggle" id="mobileToggle" aria-label="Open menu">☰</button>
+        <div class="breadcrumbs">Sample workspace <span>/</span> <strong id="breadcrumbTitle">Overview</strong></div>
+        <div class="topbar-actions">
+          <span class="demo-label"><i></i> Fictional demo data</span>
+          <button class="icon-button" data-open-view="notifications" aria-label="Open notifications">♧<em class="notification-dot"></em></button>
+          <button class="user-chip" data-open-view="settings"><span class="avatar avatar-teal">AF</span><span>Alex Family</span><b>⌄</b></button>
+        </div>
+      </header>
+
+      <div class="demo-content">
+        <div class="demo-safety"><span>ⓘ</span><div><strong>Public demo · Fictional information only</strong><p>Everything on this page is sample data stored only in this browser session. No patient records, accounts, or backend data are accessed or changed.</p></div></div>
+
+        <section class="demo-view active" id="view-overview">
+          <div class="page-heading"><div><span class="eyebrow">MONDAY, 9 NOVEMBER 2026</span><h1>Good morning, Alex <span>✳</span></h1><p>Here’s a clear view of your family’s care today.</p></div><button class="button-primary" data-open-view="appointments">＋ Plan an appointment</button></div>
+          <div class="metric-grid">
+            <article class="metric-card"><div class="metric-top"><span>Family members</span><span class="metric-icon mint">♧</span></div><strong>4</strong><small><span class="positive">●</span> 2 caregivers connected</small></article>
+            <article class="metric-card"><div class="metric-top"><span>Upcoming appointments</span><span class="metric-icon blue">▦</span></div><strong>3</strong><small>Next visit in 2 days</small></article>
+            <article class="metric-card"><div class="metric-top"><span>Medication adherence</span><span class="metric-icon peach">✚</span></div><strong id="overviewAdherence">92<span>%</span></strong><small>Sample rate · last 7 days</small></article>
+            <article class="metric-card"><div class="metric-top"><span>Care team</span><span class="metric-icon violet">♡</span></div><strong>3</strong><small>Professionals listed</small></article>
+          </div>
+          <div class="content-grid overview-grid">
+            <article class="surface analytics-preview">
+              <div class="surface-heading"><div><span class="section-kicker">HEALTH OVERVIEW</span><h2>Measurement trends</h2><p>Illustrative readings · Last 7 days</p></div><button class="text-link" data-open-view="analytics">View analytics →</button></div>
+              <div class="chart-legend"><span><i class="legend-bp"></i> Systolic BP</span><span><i class="legend-hr"></i> Heart rate</span></div>
+              <div class="chart-wrap" id="overviewChart"></div>
+              <div class="chart-foot"><span>Values shown are fictional and not clinical guidance.</span><span>Nov 3 — Nov 9</span></div>
+            </article>
+            <article class="surface next-visit">
+              <div class="surface-heading"><div><span class="section-kicker">COMING UP</span><h2>Next appointment</h2></div><button class="text-link" data-open-view="appointments">All visits →</button></div>
+              <div class="next-date"><strong>11</strong><span>NOV</span></div>
+              <div class="next-copy"><strong>Routine follow-up</strong><span>Dr. Meera Shah · General physician</span><small>Wednesday, 10:30 AM · Sample City Clinic</small></div>
+              <div class="visit-status"><span></span> Confirmed</div>
+            </article>
+          </div>
+          <div class="content-grid lower-grid">
+            <article class="surface">
+              <div class="surface-heading"><div><span class="section-kicker">TODAY'S ROUTINE</span><h2>Medication check-in</h2><p>Sample schedule · Monday</p></div><button class="text-link" data-open-view="medications">View schedule →</button></div>
+              <div id="overviewDoseList" class="compact-list"></div>
+            </article>
+            <article class="surface">
+              <div class="surface-heading"><div><span class="section-kicker">FAMILY ACTIVITY</span><h2>Recent updates</h2></div><button class="text-link" data-open-view="family">Care circle →</button></div>
+              <div class="activity-list">
+                <div class="activity-item"><span class="activity-icon mint">✓</span><div><strong>Morning routine checked</strong><small>Alex · Today, 8:15 AM</small></div></div>
+                <div class="activity-item"><span class="activity-icon blue">▦</span><div><strong>Follow-up appointment confirmed</strong><small>Priya · Yesterday, 4:40 PM</small></div></div>
+                <div class="activity-item"><span class="activity-icon peach">✚</span><div><strong>Medication list reviewed</strong><small>Alex · Yesterday, 9:10 AM</small></div></div>
+              </div>
+            </article>
+          </div>
+          <p class="clinical-note">Healthcare OS is a care-coordination prototype. It does not diagnose, interpret readings, or recommend treatment.</p>
+        </section>
+
+        <section class="demo-view" id="view-analytics">
+          <div class="page-heading"><div><span class="eyebrow">HEALTH AT A GLANCE</span><h1>Health analytics</h1><p>Explore sample measurement trends and adherence summaries.</p></div><span class="period-pill">Last 7 days <span>⌄</span></span></div>
+          <div class="metric-grid analytics-metrics">
+            <article class="metric-card"><div class="metric-top"><span>Latest blood pressure</span><span class="metric-icon mint">⌁</span></div><strong>118/76</strong><small>mmHg · Sample reading</small></article>
+            <article class="metric-card"><div class="metric-top"><span>Latest heart rate</span><span class="metric-icon blue">♡</span></div><strong>72 <span class="unit">bpm</span></strong><small>Sample reading</small></article>
+            <article class="metric-card"><div class="metric-top"><span>7-day adherence</span><span class="metric-icon peach">✚</span></div><strong id="analyticsAdherence">92<span>%</span></strong><small>Fictional logged doses</small></article>
+            <article class="metric-card"><div class="metric-top"><span>Measurements logged</span><span class="metric-icon violet">▤</span></div><strong>14</strong><small>Across 2 sample profiles</small></article>
+          </div>
+          <div class="content-grid analytics-charts">
+            <article class="surface"><div class="surface-heading"><div><span class="section-kicker">BLOOD PRESSURE</span><h2>Weekly trend</h2><p>Illustrative systolic and diastolic readings</p></div><span class="chart-unit">mmHg</span></div><div class="chart-legend"><span><i class="legend-bp"></i> Systolic</span><span><i class="legend-diastolic"></i> Diastolic</span></div><div class="chart-wrap tall-chart" id="bpChart"></div></article>
+            <article class="surface"><div class="surface-heading"><div><span class="section-kicker">HEART RATE</span><h2>Weekly trend</h2><p>Illustrative resting heart-rate readings</p></div><span class="chart-unit">bpm</span></div><div class="chart-wrap tall-chart" id="hrChart"></div></article>
+          </div>
+          <article class="surface adherence-panel"><div class="surface-heading"><div><span class="section-kicker">MEDICATION ROUTINE</span><h2>Adherence overview</h2><p>Sample logs · Last 7 days</p></div><strong class="adherence-score" id="analyticsScore">92%</strong></div><div class="adherence-track"><span id="adherenceBar" style="width:92%"></span></div><div class="adherence-breakdown"><span><i class="dose-taken"></i> Taken <strong id="takenCount">46</strong></span><span><i class="dose-missed"></i> Missed <strong id="missedCount">4</strong></span><span><i class="dose-skipped"></i> Skipped <strong>0</strong></span></div></article>
+          <p class="clinical-note">Charts are illustrative UI examples, not a clinical interpretation or a substitute for a clinician's advice.</p>
+        </section>
+
+        <section class="demo-view" id="view-appointments">
+          <div class="page-heading"><div><span class="eyebrow">PLAN AHEAD</span><h1>Appointments</h1><p>Keep upcoming visits, provider details and status in one view.</p></div><button class="button-primary" id="addAppointmentButton">＋ Add sample visit</button></div>
+          <div class="appointment-layout">
+            <article class="surface calendar-surface"><div class="surface-heading"><div><span class="section-kicker">CALENDAR</span><h2>November 2026</h2></div><div class="calendar-controls"><button id="calendarPrev" aria-label="Previous month">‹</button><button id="calendarNext" aria-label="Next month">›</button></div></div><div class="calendar-grid" id="calendarGrid"></div><div class="calendar-legend"><span><i></i> Appointment day</span><span><b></b> Selected day</span></div></article>
+            <article class="surface visit-list-surface"><div class="surface-heading"><div><span class="section-kicker">VISIT SCHEDULE</span><h2 id="selectedDateTitle">All upcoming visits</h2></div><select id="appointmentFilter" aria-label="Filter appointments"><option value="all">All statuses</option><option value="confirmed">Confirmed</option><option value="scheduled">Scheduled</option><option value="completed">Completed</option></select></div><div id="appointmentList" class="visit-list"></div></article>
+          </div>
+          <div class="demo-inline-note"><span>ⓘ</span> Appointment reminders in this public demo are visual examples only. No emails, SMS messages or push notifications are sent.</div>
+        </section>
+
+        <section class="demo-view" id="view-medications">
+          <div class="page-heading"><div><span class="eyebrow">EVERYDAY ROUTINES</span><h1>Medication management</h1><p>View sample schedules, dose history and refill prompts.</p></div><span class="period-pill">Sample profile · Alex</span></div>
+          <div class="med-summary-grid">
+            <article class="metric-card"><div class="metric-top"><span>Active medicines</span><span class="metric-icon mint">✚</span></div><strong>3</strong><small>Sample medication list</small></article>
+            <article class="metric-card"><div class="metric-top"><span>Today's doses</span><span class="metric-icon blue">◷</span></div><strong id="todayDoseCount">3</strong><small>Across the sample schedule</small></article>
+            <article class="metric-card"><div class="metric-top"><span>Refill reminders</span><span class="metric-icon peach">▤</span></div><strong>1</strong><small>Sample reminder due soon</small></article>
+          </div>
+          <div class="surface medication-surface"><div class="surface-heading"><div><span class="section-kicker">MEDICATION LIST</span><h2>Current routines</h2><p>Enter only as prescribed by a qualified clinician in a real care setting.</p></div></div><div id="medicationCards" class="medication-cards"></div></div>
+          <div class="content-grid lower-grid">
+            <article class="surface"><div class="surface-heading"><div><span class="section-kicker">DOSE HISTORY</span><h2>Recent check-ins</h2></div></div><div id="doseHistory" class="compact-list"></div></article>
+            <article class="surface refill-card"><div class="refill-art">▤</div><span class="section-kicker">REFILL REMINDER</span><h2>One sample item needs attention</h2><p>Vitamin D · Sample supply estimate: 5 days remaining.</p><small>This is a fictional reminder, not a prescription or pharmacy order.</small></article>
+          </div>
+        </section>
+
+        <section class="demo-view" id="view-family">
+          <div class="page-heading"><div><span class="eyebrow">YOUR CARE CIRCLE</span><h1>Family & caregivers</h1><p>See who's connected and what each sample role can do.</p></div><span class="period-pill">4 sample profiles</span></div>
+          <div class="family-grid" id="familyCards"></div>
+          <article class="surface permissions-surface"><div class="surface-heading"><div><span class="section-kicker">ACCESS AT A GLANCE</span><h2>Caregiver permissions</h2><p>Illustrative role matrix for the prototype.</p></div></div><div class="permission-table-wrap"><table class="permission-table"><thead><tr><th>Permission</th><th>Owner</th><th>Caregiver</th><th>Member</th></tr></thead><tbody><tr><td>View family overview</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>Manage appointments</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>Update medication list</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>Manage caregiver access</td><td>✓</td><td>—</td><td>—</td></tr><tr><td>Change workspace settings</td><td>✓</td><td>—</td><td>—</td></tr></tbody></table></div><p class="clinical-note">This table illustrates intended product roles only. It does not grant or enforce access to any account.</p></article>
+          <article class="surface activity-surface"><div class="surface-heading"><div><span class="section-kicker">FAMILY ACTIVITY</span><h2>Recent activity timeline</h2></div></div><div class="activity-list"><div class="activity-item"><span class="activity-icon mint">✓</span><div><strong>Morning routine checked</strong><small>Alex · Today, 8:15 AM</small></div><span class="activity-tag">Medication</span></div><div class="activity-item"><span class="activity-icon blue">▦</span><div><strong>Follow-up appointment confirmed</strong><small>Priya · Yesterday, 4:40 PM</small></div><span class="activity-tag">Appointment</span></div><div class="activity-item"><span class="activity-icon peach">✚</span><div><strong>Medication list reviewed</strong><small>Alex · Yesterday, 9:10 AM</small></div><span class="activity-tag">Medication</span></div><div class="activity-item"><span class="activity-icon violet">♧</span><div><strong>Caregiver profile viewed</strong><small>Sam · 7 November, 11:20 AM</small><span class="activity-tag">Family</span></div></div></div></article>
+        </section>
+
+        <section class="demo-view" id="view-notifications">
+          <div class="page-heading"><div><span class="eyebrow">STAY IN THE LOOP</span><h1>Notifications</h1><p>Sample reminders and important workspace updates.</p></div><button class="button-secondary" id="markAllRead">Mark all as read</button></div>
+          <article class="surface notification-surface"><div id="notificationList" class="notification-list"></div></article>
+          <div class="demo-inline-note"><span>ⓘ</span> These are local sample notifications. The demo does not send email, SMS or push alerts.</div>
+        </section>
+
+        <section class="demo-view" id="view-settings">
+          <div class="page-heading"><div><span class="eyebrow">YOUR PREFERENCES</span><h1>Account settings</h1><p>Review profile, notification preferences and session controls.</p></div></div>
+          <div class="settings-grid">
+            <article class="surface settings-card"><span class="settings-icon mint">♧</span><span class="section-kicker">SAMPLE PROFILE</span><h2>Alex Family</h2><p>Demo workspace owner · alex@example.test</p><div class="settings-detail"><span class="avatar avatar-teal">AF</span><div><strong>Alex Family</strong><small>Fictional profile · Not a real account</small></div></div><p class="settings-footnote">Profile editing is disabled in this public demo.</p></article>
+            <article class="surface settings-card"><span class="settings-icon blue">◉</span><span class="section-kicker">NOTIFICATIONS</span><h2>Reminder preferences</h2><p>Toggle how sample reminders would appear.</p><label class="setting-toggle"><span><strong>Appointment reminders</strong><small>Upcoming visit notifications</small></span><input type="checkbox" checked data-setting="appointments"><i></i></label><label class="setting-toggle"><span><strong>Medication reminders</strong><small>Scheduled routine check-ins</small></span><input type="checkbox" checked data-setting="medications"><i></i></label><label class="setting-toggle"><span><strong>Family activity updates</strong><small>Important changes in the care circle</small></span><input type="checkbox" data-setting="family"><i></i></label></article>
+            <article class="surface settings-card"><span class="settings-icon peach">⌑</span><span class="section-kicker">SESSION & PRIVACY</span><h2>Demo session</h2><p>This experience uses fictional, in-memory data only.</p><div class="settings-detail"><span class="session-shield">✓</span><div><strong>No real account connected</strong><small>No backend writes or personal data access</small></div></div><button class="button-secondary settings-reset" id="resetDemo">Reset demo changes</button></article>
+            <article class="surface settings-card"><span class="settings-icon violet">⚙</span><span class="section-kicker">PRODUCT INFORMATION</span><h2>Prototype status</h2><p>Healthcare OS is an early care-coordination prototype. It is not a medical device or clinical service.</p><div class="settings-detail"><span class="session-shield">i</span><div><strong>Version · Public demo</strong><small>Sample data only · Not for clinical use</small></div></div><a class="settings-contact" href="/login.html">Sign in to your own workspace →</a></article>
+          </div>
+        </section>
+
+        <footer class="demo-footer"><span>Healthcare OS · Public demo</span><span>Fictional data only · Not for clinical use</span><a href="/">Back to healthcare-os.vercel.app</a></footer>
+      </div>
+    </main>
+  </div>
+  <script src="/demo.js" defer></script>
+</body>
+</html>
