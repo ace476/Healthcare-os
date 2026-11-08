@@ -249,14 +249,6 @@
     }
   });
 
-  $('termsLink')?.addEventListener('click', event => {
-    event.preventDefault();
-    showNotice('Prototype terms: use sample information only. This app is not intended for real patient records.', 'success');
-  });
-  $('privacyLink')?.addEventListener('click', event => {
-    event.preventDefault();
-    showNotice('Privacy notice: this prototype uses sample records. Do not enter real or sensitive health information.', 'success');
-  });
 
   setAuthMode(params.get('mode') === 'signup' ? 'signup' : 'signin');
   if (params.get('mode') === 'signup' && !signupAvailable) showNotice('New account registration is paused for this public demo. Explore the sample workspace or sign in to an existing account.', 'success');
