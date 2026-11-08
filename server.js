@@ -188,7 +188,7 @@ app.post('/api/family-members', asyncRoute(async (req, res) => {
 
 const APPOINTMENT_TIME_ZONE = 'Asia/Kolkata';
 function parseLocalIST(value) {
-  if (typeof value !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/.test(value)) return null;
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return null;
   const [datePart, timePart] = value.split('T');
   const [year, month, day] = datePart.split('-').map(Number);
   const [hour, minute] = timePart.split(':').map(Number);
