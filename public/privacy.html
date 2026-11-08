@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Prototype privacy notice for the Healthcare OS public demo.">
+  <meta name="robots" content="noindex">
+  <title>Privacy notice · Healthcare OS</title>
+  <link rel="stylesheet" href="/legal.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <main class="legal-wrap">
+    <nav class="legal-nav"><a class="legal-brand" href="/">healthcare<span>OS</span></a><a href="/demo.html">Back to demo →</a></nav>
+    <article class="legal-card">
+      <span class="legal-kicker">HEALTHCARE OS · PUBLIC DEMO</span>
+      <h1>Privacy notice</h1>
+      <p class="legal-updated">Prototype notice · Last updated 9 November 2026</p>
+      <div class="legal-alert"><strong>Important:</strong> This is an early prototype notice, not a complete statutory privacy policy. Healthcare OS is not ready to collect real patient or sensitive health information. Use fictional information only.</div>
+
+      <h2>1. The public demo</h2>
+      <p>The interactive public demo uses fictional sample profiles, measurements, appointments, medication entries and notifications. Demo interactions are held in the current page session only. The demo script does not send those sample entries to the Healthcare OS API or Supabase and does not save them to an account.</p>
+
+      <h2>2. Sign-in and existing accounts</h2>
+      <p>The separate sign-in page connects to Supabase Auth for existing accounts. Account email addresses, authentication credentials and session information are processed by the authentication service. Depending on the “Keep me signed in” setting, the browser stores session state in persistent or session storage. New account registration is currently paused.</p>
+      <p>Signing in is separate from exploring the public demo. The authenticated workspace contains features that can store family and health-related information. Do not enter real patient information while this prototype's security, privacy, operational and legal readiness remains incomplete.</p>
+
+      <h2>3. Password reset screening</h2>
+      <p>When an authenticated user chooses a new password during account recovery, the server checks it against the Have I Been Pwned Pwned Passwords range service. The server sends only the first five characters of a SHA-1 hash to that service and compares the returned hash suffixes locally. The plaintext password is not sent to that service.</p>
+
+      <h2>4. Hosting and technical information</h2>
+      <p>Website pages and server requests are hosted through Vercel. The application also uses Supabase for authentication and its separate authenticated workspace. Hosting and infrastructure providers may process technical request information as part of operating and securing their services. This prototype notice does not specify provider retention periods or all possible infrastructure processing.</p>
+
+      <h2>5. Cookies and browser storage</h2>
+      <p>The sign-in experience uses browser storage to remember the session preference and, when selected, to maintain an authenticated session. The public demo's sample interactions are kept in page memory and are cleared when the page is reloaded or closed.</p>
+
+      <h2>6. Sharing and sale</h2>
+      <p>This notice does not claim that the complete authenticated workspace has undergone a production privacy assessment. No real health information should be submitted. Before any real-data launch, the operator must document all recipients, processors, retention periods, deletion processes and any applicable international transfers.</p>
+
+      <h2>7. Your choices</h2>
+      <p>You can leave the public demo at any time. If you are signed in to an existing account, use the account's sign-out control and avoid shared devices. Do not use this prototype to submit a request containing health information or identity documents.</p>
+
+      <h2>8. Operator contact and future updates</h2>
+      <p>The operator's legal identity, business address, privacy contact and formal data-rights request process have not yet been published. These details must be added and reviewed before the product collects real personal or health information. This notice will need a full legal and operational review before that point.</p>
+
+      <h2>9. Prototype status</h2>
+      <p>Healthcare OS is a care-coordination prototype, not a clinical service or medical device. This page is intended to explain the current demo boundaries; it is not a promise that the complete product is compliant with any particular privacy law.</p>
+    </article>
+    <footer class="legal-foot"><span>Healthcare OS · Fictional demo data only</span><span><a href="/terms.html">Terms of use</a> · <a href="/">Home</a></span></footer>
+  </main>
+</body>
+</html>
