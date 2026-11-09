@@ -126,6 +126,48 @@ app.post('/api/auth/password-check', requireAuth, asyncRoute(async (req, res) =>
 }));
 
 
+
+/** Public fictional-demo AI endpoint. It never reads or writes Supabase. */
+const demoAssistantRate = new Map();
+app.post('/api/demo-assistant', asyncRoute(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const now=Date.now(), ip=req.ip||'unknown';
+  const recent=(demoAssistantRate.get(ip)||[]).filter(ts=>now-ts<60000);
+  if(recent.length>=12)return res.status(429).json({error:'Please wait a moment before sending another message.'});
+  recent.push(now);demoAssistantRate.set(ip,recent);
+  if(!process.env.AI_GATEWAY_API_KEY)return res.status(503).json({error:'The AI service is not connected yet. Add AI_GATEWAY_API_KEY to the Healthcare-OS Vercel project environment variables, then redeploy.'});
+  const raw=Array.isArray(req.body?.messages)?req.body.messages.slice(-10):[];
+  const messages=raw.filter(m=>m&&['user','assistant'].includes(m.role)&&typeof m.content==='string').map(m=>({role:m.role,content:m.content.trim().slice(0,1600)})).filter(m=>m.content);
+  if(!messages.length||messages[messages.length-1].role!=='user')return res.status(400).json({error:'Send a message to continue.'});
+  const context=req.body?.context&&typeof req.body.context==='object'?JSON.stringify(req.body.context).slice(0,5000):'{}';
+  const systemPrompt=[
+    'You are the Healthcare OS assistant inside a PUBLIC FICTIONAL DEMO. Only help with overview, health analytics, appointments, medication schedules, family/caregivers, notifications and settings.',
+    'You may navigate, summarize supplied fictional sample data, and prepare a draft entry for user review. Never invent records, availability, clinician details, prescriptions, or claim an action is complete.',
+    'Never diagnose, interpret measurements, prescribe, recommend or change medication/doses, triage, or provide emergency medical advice. Refer clinical questions to a qualified clinician; emergencies to local emergency services.',
+    'Do not request or process real patient data, identifiers, passwords, or secrets. This demo is fictional only.',
+    'For create actions, gather required details first. Never invent medication name, dose, frequency or times. Appointment requires title, date, time. Medication details must be user-supplied. Measurement requires metric, value, unit. Family profile requires name.',
+    'Never execute actions. Return a proposed action only; the browser opens a review form and the user must explicitly save.',
+    'Return ONLY valid JSON: {"reply":"short helpful response","action":null} or {"reply":"short response","action":{"type":"navigate|create_appointment|add_medication|log_measurement|add_family_member","fields":{...}}}.',
+    'Allowed navigation views: overview, analytics, appointments, medications, family, notifications, settings.',
+    'Form field names: appointment title, member, doctor, clinic, date YYYY-MM-DD, time HH:mm, repeat, notes; medication name, member, dose, time HH:mm, frequency daily|twice|weekly|as-needed, start YYYY-MM-DD, refill, instruction; measurement metric Blood pressure|Heart rate|Temperature|Oxygen saturation|Weight|Blood glucose, member, value, unit, date, time, notes; family name, relation, role Member|Caregiver, initials.',
+    'Use only this current fictional context to answer record questions; if missing, say so. CONTEXT: '+context
+  ].join('\n');
+  try{
+    const response=await fetch('https://ai-gateway.vercel.sh/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+process.env.AI_GATEWAY_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({model:process.env.HEALTHCARE_AI_MODEL||'openai/gpt-5.5',messages:[{role:'system',content:systemPrompt},...messages],response_format:{type:'json_object'},temperature:0.2,max_tokens:500}),signal:AbortSignal.timeout(20000)});
+    if(!response.ok){console.error('Healthcare OS AI Gateway status:',response.status);return res.status(response.status===429?429:502).json({error:response.status===429?'The AI service is busy. Please try again shortly.':'The AI service could not answer right now.'});}
+    const payload=await response.json(), content=payload?.choices?.[0]?.message?.content;
+    if(typeof content!=='string')return res.status(502).json({error:'The AI service returned an unexpected response.'});
+    let result;try{result=JSON.parse(content);}catch(_error){return res.status(502).json({error:'The AI service returned an unreadable response.'});}
+    const allowed=new Set(['navigate','create_appointment','add_medication','log_measurement','add_family_member']);
+    let action=null;
+    if(result.action&&allowed.has(result.action.type)&&result.action.fields&&typeof result.action.fields==='object'&&!Array.isArray(result.action.fields)){
+      const fields={};for(const [key,value] of Object.entries(result.action.fields).slice(0,16))if(/^[a-z_]{1,24}$/.test(key)&&['string','number','boolean'].includes(typeof value))fields[key]=String(value).slice(0,180);
+      action={type:result.action.type,fields};
+    }
+    return res.json({reply:typeof result.reply==='string'?result.reply.trim().slice(0,900):'I can help with the sample workspace.',action});
+  }catch(error){console.error('Healthcare OS AI request failed:',error.name||'Error');return res.status(502).json({error:'I could not reach the AI service. Please try again.'});}
+}));
+
 // Every application-data endpoint below requires a verified Supabase user token.
 // The same user token is forwarded to Postgres, so database RLS remains in force.
 app.use('/api', (req, res, next) => {
