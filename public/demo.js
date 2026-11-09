@@ -130,7 +130,7 @@
     const input=options?'<select name="'+name+'" '+(required?'required':'')+'>'+options.map(o=>'<option value="'+esc(o.value)+'" '+(o.value===value?'selected':'')+'>'+esc(o.label)+'</option>').join('')+'</select>':'<input name="'+name+'" type="'+type+'" value="'+esc(value)+'" '+(required?'required':'')+'>';
     return '<div class="quick-field '+(full?'full':'')+'"><label for="quick-'+name+'">'+esc(label)+'</label>'+input.replace('name="'+name+'"','id="quick-'+name+'" name="'+name+'"')+'</div>';
   }
-  function openQuickAdd(kind){
+  function openQuickAdd(kind,prefill={}){
     quickKind=kind;
     const configs={
       appointment:{title:'Schedule an appointment',desc:'Add the visit details once. You can review it in your calendar.',fields:
@@ -167,6 +167,10 @@
     };
     const config=configs[kind];if(!config)return;
     $('quickAddTitle').textContent=config.title;$('quickAddDescription').textContent=config.desc;quickFields.innerHTML=config.fields;
+    Object.entries(prefill||{}).forEach(([name,value])=>{
+      const control=quickFields.querySelector('[name="'+CSS.escape(name)+'"]');
+      if(control&&value!==undefined&&value!==null)control.value=String(value);
+    });
     if(typeof quickDialog.showModal==='function')quickDialog.showModal();else quickDialog.setAttribute('open','');
     const first=quickFields.querySelector('input,select');if(first)first.focus();
   }
@@ -196,6 +200,45 @@
     }
     closeQuickAdd();quickForm.reset();
   });
+
+
+  // AI assistant: generated responses are suggestions; writes always require explicit review.
+  const assistantLauncher=$('assistantLauncher'),assistantPanel=$('assistantPanel');
+  const assistantMessages=$('assistantMessages'),assistantForm=$('assistantForm'),assistantInput=$('assistantInput');
+  const assistantHistory=[];let assistantBusy=false;
+  function addAssistantMessage(content,who='bot'){
+    const node=document.createElement('div');node.className='assistant-message assistant-'+who;node.textContent=content;
+    assistantMessages.append(node);assistantMessages.scrollTop=assistantMessages.scrollHeight;return node;
+  }
+  function currentDemoContext(){
+    return {date:'2026-11-09',appointments:appointments.map(a=>({title:a.title,date:'2026-'+String(a.month+1).padStart(2,'0')+'-'+String(a.day).padStart(2,'0'),time:a.time,doctor:a.doctor,member:a.member,status:a.status})),medications:medications.map(m=>({name:m.name,dose:m.dose,time:m.time,member:m.member,status:m.status})),doses:doses.map(d=>({name:d.name,time:d.time,member:d.member,status:d.status})),family:family.map(f=>({name:f.name,relationship:f.relation,role:f.role})),modules:['overview','analytics','appointments','medications','family','notifications','settings']};
+  }
+  function showAssistantAction(action){
+    if(!action)return;const fields=action.fields||{};
+    if(action.type==='navigate'){
+      const view=String(fields.view||'');if(['overview','analytics','appointments','medications','family','notifications','settings'].includes(view)){
+        const button=document.createElement('button');button.type='button';button.className='assistant-action-button';button.textContent='Open '+view.replace(/-/g,' ');button.addEventListener('click',()=>openView(view));assistantMessages.append(button);
+      }return;
+    }
+    const kinds={create_appointment:'appointment',add_medication:'medication',log_measurement:'measurement',add_family_member:'family'};
+    const kind=kinds[action.type];if(!kind)return;
+    const button=document.createElement('button');button.type='button';button.className='assistant-action-button';button.textContent='Review details before saving';button.addEventListener('click',()=>openQuickAdd(kind,fields));assistantMessages.append(button);assistantMessages.scrollTop=assistantMessages.scrollHeight;
+  }
+  async function sendAssistantMessage(message){
+    if(assistantBusy||!message.trim())return;assistantBusy=true;$('assistantSend').disabled=true;
+    addAssistantMessage(message,'user');assistantHistory.push({role:'user',content:message});
+    const thinking=addAssistantMessage('Thinking…','bot');
+    try{
+      const response=await fetch('/api/demo-assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:assistantHistory.slice(-10),context:currentDemoContext()})});
+      const data=await response.json().catch(()=>({}));thinking.remove();if(!response.ok)throw new Error(data.error||'The assistant is temporarily unavailable.');
+      const reply=String(data.reply||'I can help with the sample workspace.').slice(0,900);addAssistantMessage(reply,'bot');assistantHistory.push({role:'assistant',content:reply});showAssistantAction(data.action);
+    }catch(error){thinking.remove();addAssistantMessage(error.message||'I could not connect to the assistant.','bot');}
+    finally{assistantBusy=false;$('assistantSend').disabled=false;assistantInput.focus();}
+  }
+  assistantLauncher.addEventListener('click',()=>{assistantPanel.hidden=false;assistantLauncher.hidden=true;assistantInput.focus();});
+  $('assistantClose').addEventListener('click',()=>{assistantPanel.hidden=true;assistantLauncher.hidden=false;});
+  assistantForm.addEventListener('submit',event=>{event.preventDefault();const value=assistantInput.value.trim();if(!value)return;assistantInput.value='';sendAssistantMessage(value);});
+  document.querySelectorAll('[data-assistant-prompt]').forEach(button=>button.addEventListener('click',()=>sendAssistantMessage(button.dataset.assistantPrompt)));
 
   renderDoses();renderCalendar();renderFamily();renderNotifications();updateUnread();
   $('analyticsAdherence').textContent='92%';
